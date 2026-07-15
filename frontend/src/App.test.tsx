@@ -53,6 +53,15 @@ describe("App", () => {
     render(<App />);
 
     expect(await screen.findByText("Capacity and workload placement dashboard")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: /dashboard sections/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /overview/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /operate/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /observe/i })).toBeInTheDocument();
+    expect(screen.getByText("What this dashboard does")).toBeInTheDocument();
+    expect(screen.queryByText("Learn mode")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Cell").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /run failure drill/i })).toBeInTheDocument();
     expect(screen.getAllByText("cell-use1-a").length).toBeGreaterThan(0);
     expect(screen.getAllByText("wl-demo").length).toBeGreaterThan(0);
     expect(screen.getByText("CELL_OVERLOADED")).toBeInTheDocument();
@@ -60,7 +69,7 @@ describe("App", () => {
     expect(screen.getByText("LOW")).toBeInTheDocument();
     expect(screen.getByText("PLACEMENT_CREATED")).toBeInTheDocument();
     expect(screen.getByText("1 rebalance move ready")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /rebalance/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /rebalance/i }).length).toBeGreaterThan(1);
     expect(screen.getByRole("button", { name: /migrations/i })).toBeInTheDocument();
     expect(screen.getAllByText("cell-use1-a → cell-use1-b").length).toBeGreaterThan(1);
     expect(screen.getByText("ACTIVE")).toBeInTheDocument();
@@ -136,6 +145,37 @@ describe("App", () => {
       );
     });
   });
+
+  test("runs the beginner failure drill end to end", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findByRole("button", { name: /run failure drill/i });
+    await user.click(screen.getByRole("button", { name: /run failure drill/i }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/admin/reset"),
+        expect.objectContaining({ method: "POST" })
+      );
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/workloads"),
+        expect.objectContaining({ method: "POST" })
+      );
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/workloads/wl-created/place?strategy=LEAST_ALLOCATED"),
+        expect.objectContaining({ method: "POST" })
+      );
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/simulations/cell-failure"),
+        expect.objectContaining({ method: "POST" })
+      );
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/rebalance/executions"),
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+  });
 });
 
 function mockFetch(input: RequestInfo | URL, init?: RequestInit) {
@@ -148,6 +188,19 @@ function mockFetch(input: RequestInfo | URL, init?: RequestInit) {
 }
 
 function responseFor(url: string, method: string) {
+  if (url === "/api/workloads" && method === "POST") {
+    return {
+      id: "wl-created",
+      tenantId: "tenant-alpha",
+      region: "us-east",
+      tier: "STANDARD",
+      demand: { cpuCores: 2, memoryGb: 4, storageGb: 50, iops: 1000 },
+      state: "REQUESTED",
+      assignedCellId: null,
+      createdAt: "2026-07-15T00:00:00Z",
+      updatedAt: "2026-07-15T00:00:00Z"
+    };
+  }
   if (url === "/api/cells") {
     return cells;
   }
@@ -258,17 +311,25 @@ function responseFor(url: string, method: string) {
       message: "Rolled back workload wl-demo from cell-use1-b to cell-use1-a"
     };
   }
-  if (url === "/api/workloads" && method === "POST") {
+  if (url === "/api/admin/reset") {
     return {
-      id: "wl-created",
-      tenantId: "tenant-alpha",
-      region: "us-east",
-      tier: "STANDARD",
-      demand: { cpuCores: 2, memoryGb: 4, storageGb: 50, iops: 1000 },
-      state: "REQUESTED",
-      assignedCellId: null,
-      createdAt: "2026-07-15T00:00:00Z",
-      updatedAt: "2026-07-15T00:00:00Z"
+      message: "Demo state reset"
+    };
+  }
+  if (url === "/api/simulations/cell-failure") {
+    return {
+      cellId: "cell-use1-a",
+      cellStatus: "DOWN",
+      maxUtilizationPercent: 55.88,
+      affectedWorkloads: 1,
+      incident: {
+        id: "inc-failure",
+        type: "CELL_FAILED",
+        severity: "CRITICAL",
+        cellId: "cell-use1-a",
+        message: "Cell cell-use1-a is down",
+        createdAt: "2026-07-15T00:00:00Z"
+      }
     };
   }
   return {
