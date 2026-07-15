@@ -1,0 +1,33 @@
+# OS
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Java
+target/
+build/
+.gradle/
+*.class
+
+# Node
+node_modules/
+dist/
+coverage/
+.vite/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Docker/local data
+docker-data/
+postgres-data/
+redis-data/
+
