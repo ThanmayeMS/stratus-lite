@@ -89,14 +89,24 @@ public class PlacementRecordRepository {
             jdbcTemplate.update(
                     """
                             INSERT INTO placement_candidates (
-                                placement_workload_id, candidate_order, cell_id, score, reason
+                                placement_workload_id,
+                                candidate_order,
+                                cell_id,
+                                eligible,
+                                score,
+                                projected_utilization_percent,
+                                policy_summary,
+                                reason
                             )
-                            VALUES (?, ?, ?, ?, ?)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                             """,
                     record.workloadId(),
                     index,
                     candidate.cell().id(),
+                    candidate.eligible(),
                     candidate.score(),
+                    candidate.projectedUtilizationPercent(),
+                    candidate.policySummary(),
                     candidate.reason()
             );
         }
@@ -117,7 +127,12 @@ public class PlacementRecordRepository {
     private List<CandidateScore> findCandidates(String workloadId) {
         return jdbcTemplate.query(
                 """
-                        SELECT cell_id, score, reason
+                        SELECT cell_id,
+                               eligible,
+                               score,
+                               projected_utilization_percent,
+                               policy_summary,
+                               reason
                         FROM placement_candidates
                         WHERE placement_workload_id = ?
                         ORDER BY candidate_order
@@ -135,7 +150,10 @@ public class PlacementRecordRepository {
                 ));
         return new CandidateScore(
                 cell,
+                resultSet.getBoolean("eligible"),
                 resultSet.getDouble("score"),
+                resultSet.getDouble("projected_utilization_percent"),
+                resultSet.getString("policy_summary"),
                 resultSet.getString("reason")
         );
     }

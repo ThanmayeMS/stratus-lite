@@ -14,6 +14,8 @@ public record CapacityInsight(
         double maxUtilizationPercent,
         int riskScore,
         CapacityRiskLevel riskLevel,
-        String summary
+        String summary,
+        String explanation,
+        String operatorAction
 ) {
 }

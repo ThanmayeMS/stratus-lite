@@ -21,7 +21,15 @@ public class RebalanceExecutionRepository {
     public List<RebalanceExecutionRecord> findAll() {
         return jdbcTemplate.query(
                 """
-                        SELECT id, workload_id, source_cell_id, target_cell_id, status, created_at, rolled_back_at
+                        SELECT id,
+                               workload_id,
+                               source_cell_id,
+                               target_cell_id,
+                               status,
+                               explanation,
+                               operator_action,
+                               created_at,
+                               rolled_back_at
                         FROM rebalance_executions
                         ORDER BY created_at DESC
                         """,
@@ -32,7 +40,15 @@ public class RebalanceExecutionRepository {
     public Optional<RebalanceExecutionRecord> findById(String executionId) {
         List<RebalanceExecutionRecord> records = jdbcTemplate.query(
                 """
-                        SELECT id, workload_id, source_cell_id, target_cell_id, status, created_at, rolled_back_at
+                        SELECT id,
+                               workload_id,
+                               source_cell_id,
+                               target_cell_id,
+                               status,
+                               explanation,
+                               operator_action,
+                               created_at,
+                               rolled_back_at
                         FROM rebalance_executions
                         WHERE id = ?
                         """,
@@ -50,6 +66,8 @@ public class RebalanceExecutionRepository {
                             source_cell_id = ?,
                             target_cell_id = ?,
                             status = ?,
+                            explanation = ?,
+                            operator_action = ?,
                             created_at = ?,
                             rolled_back_at = ?
                         WHERE id = ?
@@ -58,6 +76,8 @@ public class RebalanceExecutionRepository {
                 record.sourceCellId(),
                 record.targetCellId(),
                 record.status().name(),
+                record.explanation(),
+                record.operatorAction(),
                 Timestamp.from(record.createdAt()),
                 timestamp(record.rolledBackAt()),
                 record.id()
@@ -67,15 +87,25 @@ public class RebalanceExecutionRepository {
             jdbcTemplate.update(
                     """
                             INSERT INTO rebalance_executions (
-                                id, workload_id, source_cell_id, target_cell_id, status, created_at, rolled_back_at
+                                id,
+                                workload_id,
+                                source_cell_id,
+                                target_cell_id,
+                                status,
+                                explanation,
+                                operator_action,
+                                created_at,
+                                rolled_back_at
                             )
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                             """,
                     record.id(),
                     record.workloadId(),
                     record.sourceCellId(),
                     record.targetCellId(),
                     record.status().name(),
+                    record.explanation(),
+                    record.operatorAction(),
                     Timestamp.from(record.createdAt()),
                     timestamp(record.rolledBackAt())
             );
@@ -90,6 +120,8 @@ public class RebalanceExecutionRepository {
                 resultSet.getString("source_cell_id"),
                 resultSet.getString("target_cell_id"),
                 RebalanceExecutionStatus.valueOf(resultSet.getString("status")),
+                resultSet.getString("explanation"),
+                resultSet.getString("operator_action"),
                 resultSet.getTimestamp("created_at").toInstant(),
                 rolledBackAt == null ? null : rolledBackAt.toInstant()
         );

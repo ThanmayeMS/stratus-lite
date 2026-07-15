@@ -751,11 +751,18 @@ th {
 }
 
 .candidate-row {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
+.candidate-row small,
 .candidate-row p {
   grid-column: 1 / -1;
+}
+
+.candidate-row small {
+  color: #607086;
+  font-size: 0.76rem;
+  font-weight: 800;
 }
 
 .incident-item {
@@ -789,6 +796,7 @@ th {
 }
 
 .candidate-row p,
+.incident-item p,
 .event-item p,
 .move-item p,
 .execution-item p {
@@ -820,6 +828,27 @@ th {
   color: #176b5d !important;
   font-size: 0.72rem !important;
   font-weight: 850;
+}
+
+.eligibility-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.eligibility-pill.eligible {
+  background: #e8f5f0;
+  color: #176b5d;
+}
+
+.eligibility-pill.rejected {
+  background: #fff1f1;
+  color: #af3029;
 }
 
 .execution-status.rolled_back {

@@ -82,7 +82,16 @@ public class CapacityInsightService {
                 roundPercent(maxUtilizationPercent),
                 riskScore,
                 riskLevel,
-                summary(riskLevel)
+                summary(riskLevel),
+                explanation(
+                        maxUtilizationPercent,
+                        overloadedCells,
+                        downCells,
+                        degradedWorkloads,
+                        criticalIncidents,
+                        recommendations.size()
+                ),
+                operatorAction(riskLevel, recommendations.size())
         );
     }
 
@@ -128,6 +137,37 @@ public class CapacityInsightService {
             case ELEVATED -> "Fleet has rising pressure; review recommendations before more demand arrives";
             case HIGH -> "Fleet is near a reliability threshold; prioritize mitigation";
             case CRITICAL -> "Fleet has active reliability risk; execute restore or rebalance actions";
+        };
+    }
+
+    private static String explanation(
+            double maxUtilizationPercent,
+            int overloadedCells,
+            int downCells,
+            int degradedWorkloads,
+            int criticalIncidents,
+            int recommendedMoves
+    ) {
+        return "Risk score combines max utilization %.2f%%, %d overloaded cells, %d down cells, %d degraded workloads, %d critical incidents, and %d recommended moves."
+                .formatted(
+                        roundPercent(maxUtilizationPercent),
+                        overloadedCells,
+                        downCells,
+                        degradedWorkloads,
+                        criticalIncidents,
+                        recommendedMoves
+                );
+    }
+
+    private static String operatorAction(CapacityRiskLevel riskLevel, int recommendedMoves) {
+        if (recommendedMoves > 0) {
+            return "Review and execute rebalance recommendations before adding more workload.";
+        }
+        return switch (riskLevel) {
+            case LOW -> "No immediate action required; continue monitoring utilization.";
+            case ELEVATED -> "Review placement decisions and avoid adding large workloads to hot cells.";
+            case HIGH -> "Investigate incidents and reduce pressure before accepting more demand.";
+            case CRITICAL -> "Restore failed cells or migrate affected workloads immediately.";
         };
     }
 

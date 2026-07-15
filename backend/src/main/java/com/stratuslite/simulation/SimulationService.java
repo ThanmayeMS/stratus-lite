@@ -61,7 +61,13 @@ public class SimulationService {
                 cell.status(),
                 percent(cell.maxUtilization()),
                 0,
-                incident
+                incident,
+                overloaded
+                        ? "The injected load pushed this cell past the overload threshold, so rebalance may be recommended."
+                        : "The injected load was recorded, but the cell still has enough headroom.",
+                overloaded
+                        ? "Review rebalance recommendations for workloads on this cell."
+                        : "Continue monitoring; no immediate migration is required."
         );
     }
 
@@ -88,7 +94,11 @@ public class SimulationService {
                 cell.status(),
                 percent(cell.maxUtilization()),
                 affectedWorkloads,
-                incident
+                incident,
+                "The cell was marked DOWN, so assigned workloads were degraded and should be restored elsewhere.",
+                affectedWorkloads > 0
+                        ? "Open rebalance recommendations and execute migrations for affected workloads."
+                        : "No workloads were assigned to this cell; confirm the incident and reset the demo if needed."
         );
     }
 

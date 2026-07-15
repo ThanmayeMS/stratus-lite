@@ -28,6 +28,10 @@ class PlacementEngineTest {
 
         assertThat(decision.selectedCell().id()).isEqualTo("cell-b");
         assertThat(decision.explanation()).contains("cell-b", "BEST_FIT");
+        assertThat(decision.candidates()).allSatisfy(candidate -> {
+            assertThat(candidate.policySummary()).contains("Accepted");
+            assertThat(candidate.projectedUtilizationPercent()).isGreaterThan(0.0);
+        });
     }
 
     @Test
@@ -70,7 +74,16 @@ class PlacementEngineTest {
 
         assertThat(decision.selectedCell().id()).isEqualTo("match");
         assertThat(decision.candidates()).extracting(candidate -> candidate.cell().id())
+                .containsExactly("match", "down", "too-small", "wrong-region", "wrong-tier");
+        assertThat(decision.candidates()).filteredOn(CandidateScore::eligible)
+                .extracting(candidate -> candidate.cell().id())
                 .containsExactly("match");
+        assertThat(decision.candidates()).filteredOn(candidate -> !candidate.eligible())
+                .extracting(CandidateScore::policySummary)
+                .anySatisfy(summary -> assertThat(summary).contains("region mismatch"))
+                .anySatisfy(summary -> assertThat(summary).contains("tier does not support"))
+                .anySatisfy(summary -> assertThat(summary).contains("cell is DOWN"))
+                .anySatisfy(summary -> assertThat(summary).contains("capacity too small"));
     }
 
     @Test
@@ -93,4 +106,3 @@ class PlacementEngineTest {
         return new Cell(id, "us-east", ServiceTier.STANDARD, CellStatus.ACTIVE, total, used);
     }
 }
-

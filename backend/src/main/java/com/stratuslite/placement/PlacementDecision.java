@@ -16,8 +16,7 @@ public record PlacementDecision(
                 .filter(candidate -> candidate.cell().id().equals(selectedCell.id()))
                 .findFirst()
                 .orElseThrow();
-        return "Selected cell %s with score %.2f using %s: %s"
-                .formatted(selectedCell.id(), winner.score(), strategy, winner.reason());
+        return "Selected cell %s with score %.2f using %s: %s. %s"
+                .formatted(selectedCell.id(), winner.score(), strategy, winner.reason(), winner.policySummary());
     }
 }
-

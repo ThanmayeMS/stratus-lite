@@ -43,7 +43,10 @@ CREATE TABLE IF NOT EXISTS placement_candidates (
     placement_workload_id VARCHAR(80) NOT NULL,
     candidate_order INTEGER NOT NULL,
     cell_id VARCHAR(80) NOT NULL,
+    eligible BOOLEAN NOT NULL DEFAULT TRUE,
     score DOUBLE PRECISION NOT NULL,
+    projected_utilization_percent DOUBLE PRECISION NOT NULL DEFAULT 0,
+    policy_summary VARCHAR(700) NOT NULL DEFAULT '',
     reason VARCHAR(500) NOT NULL,
     PRIMARY KEY (placement_workload_id, candidate_order),
     CONSTRAINT fk_placement_candidates_record
@@ -51,6 +54,15 @@ CREATE TABLE IF NOT EXISTS placement_candidates (
         REFERENCES placement_records (workload_id)
         ON DELETE CASCADE
 );
+
+ALTER TABLE placement_candidates
+    ADD COLUMN IF NOT EXISTS eligible BOOLEAN NOT NULL DEFAULT TRUE;
+
+ALTER TABLE placement_candidates
+    ADD COLUMN IF NOT EXISTS projected_utilization_percent DOUBLE PRECISION NOT NULL DEFAULT 0;
+
+ALTER TABLE placement_candidates
+    ADD COLUMN IF NOT EXISTS policy_summary VARCHAR(700) NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS incidents (
     id VARCHAR(80) PRIMARY KEY,
@@ -80,9 +92,17 @@ CREATE TABLE IF NOT EXISTS rebalance_executions (
     source_cell_id VARCHAR(80) NOT NULL,
     target_cell_id VARCHAR(80) NOT NULL,
     status VARCHAR(40) NOT NULL,
+    explanation VARCHAR(700) NOT NULL DEFAULT '',
+    operator_action VARCHAR(500) NOT NULL DEFAULT '',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     rolled_back_at TIMESTAMP WITH TIME ZONE
 );
+
+ALTER TABLE rebalance_executions
+    ADD COLUMN IF NOT EXISTS explanation VARCHAR(700) NOT NULL DEFAULT '';
+
+ALTER TABLE rebalance_executions
+    ADD COLUMN IF NOT EXISTS operator_action VARCHAR(500) NOT NULL DEFAULT '';
 
 CREATE INDEX IF NOT EXISTS idx_rebalance_executions_created_at
     ON rebalance_executions (created_at DESC);

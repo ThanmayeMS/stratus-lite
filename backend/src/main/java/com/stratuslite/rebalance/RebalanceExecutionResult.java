@@ -9,6 +9,8 @@ public record RebalanceExecutionResult(
         String targetCellId,
         WorkloadState state,
         RebalanceExecutionStatus status,
-        String message
+        String message,
+        String explanation,
+        String operatorAction
 ) {
 }

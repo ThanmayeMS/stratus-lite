@@ -8,7 +8,8 @@ public record RebalanceRecommendation(
         String targetCellId,
         PlacementStrategy strategy,
         String reason,
+        String explanation,
+        String operatorAction,
         int priority
 ) {
 }
-

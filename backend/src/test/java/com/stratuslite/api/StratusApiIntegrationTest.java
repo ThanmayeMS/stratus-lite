@@ -66,7 +66,13 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$.selectedCellId").value("cell-use1-a"))
                 .andExpect(jsonPath("$.strategy").value("LEAST_ALLOCATED"))
                 .andExpect(jsonPath("$.explanation").value(notNullValue()))
-                .andExpect(jsonPath("$.candidates", hasSize(2)));
+                .andExpect(jsonPath("$.candidates", hasSize(4)))
+                .andExpect(jsonPath("$.candidates[0].cellId").value("cell-use1-a"))
+                .andExpect(jsonPath("$.candidates[0].eligible").value(true))
+                .andExpect(jsonPath("$.candidates[0].projectedUtilizationPercent").value(notNullValue()))
+                .andExpect(jsonPath("$.candidates[0].policySummary").value(notNullValue()))
+                .andExpect(jsonPath("$.candidates[2].eligible").value(false))
+                .andExpect(jsonPath("$.candidates[2].policySummary").value(notNullValue()));
 
         mockMvc.perform(get("/api/workloads"))
                 .andExpect(status().isOk())
@@ -82,7 +88,9 @@ class StratusApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.riskLevel").value("LOW"))
                 .andExpect(jsonPath("$.activeCells").value(3))
-                .andExpect(jsonPath("$.recommendedMoves").value(0));
+                .andExpect(jsonPath("$.recommendedMoves").value(0))
+                .andExpect(jsonPath("$.explanation").value(notNullValue()))
+                .andExpect(jsonPath("$.operatorAction").value(notNullValue()));
 
         mockMvc.perform(get("/api/events"))
                 .andExpect(status().isOk())
@@ -279,7 +287,9 @@ class StratusApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cellId").value("cell-use1-a"))
                 .andExpect(jsonPath("$.incident.type").value("CELL_OVERLOADED"))
-                .andExpect(jsonPath("$.incident.severity").value("WARNING"));
+                .andExpect(jsonPath("$.incident.severity").value("WARNING"))
+                .andExpect(jsonPath("$.explanation").value(notNullValue()))
+                .andExpect(jsonPath("$.operatorAction").value(notNullValue()));
 
         mockMvc.perform(get("/api/incidents"))
                 .andExpect(status().isOk())
@@ -292,7 +302,9 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$[0].workloadId").value(workloadId))
                 .andExpect(jsonPath("$[0].sourceCellId").value("cell-use1-a"))
                 .andExpect(jsonPath("$[0].targetCellId").value("cell-use1-b"))
-                .andExpect(jsonPath("$[0].reason").value("Source cell crossed the overload threshold; move workload to reduce hotspot risk"));
+                .andExpect(jsonPath("$[0].reason").value("Source cell crossed the overload threshold; move workload to reduce hotspot risk"))
+                .andExpect(jsonPath("$[0].explanation").value(notNullValue()))
+                .andExpect(jsonPath("$[0].operatorAction").value(notNullValue()));
 
         mockMvc.perform(get("/api/events"))
                 .andExpect(status().isOk())
@@ -320,7 +332,9 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$.cellStatus").value("DOWN"))
                 .andExpect(jsonPath("$.affectedWorkloads").value(1))
                 .andExpect(jsonPath("$.incident.type").value("CELL_DOWN"))
-                .andExpect(jsonPath("$.incident.severity").value("CRITICAL"));
+                .andExpect(jsonPath("$.incident.severity").value("CRITICAL"))
+                .andExpect(jsonPath("$.explanation").value(notNullValue()))
+                .andExpect(jsonPath("$.operatorAction").value(notNullValue()));
 
         mockMvc.perform(get("/api/workloads"))
                 .andExpect(status().isOk())
@@ -334,14 +348,18 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$[0].workloadId").value(workloadId))
                 .andExpect(jsonPath("$[0].sourceCellId").value("cell-use1-a"))
                 .andExpect(jsonPath("$[0].targetCellId").value("cell-use1-b"))
-                .andExpect(jsonPath("$[0].reason").value("Source cell is DOWN; workload should be restored on a healthy cell"));
+                .andExpect(jsonPath("$[0].reason").value("Source cell is DOWN; workload should be restored on a healthy cell"))
+                .andExpect(jsonPath("$[0].explanation").value(notNullValue()))
+                .andExpect(jsonPath("$[0].operatorAction").value(notNullValue()));
 
         mockMvc.perform(get("/api/insights/capacity"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.riskLevel").value("CRITICAL"))
                 .andExpect(jsonPath("$.downCells").value(1))
                 .andExpect(jsonPath("$.degradedWorkloads").value(1))
-                .andExpect(jsonPath("$.recommendedMoves").value(1));
+                .andExpect(jsonPath("$.recommendedMoves").value(1))
+                .andExpect(jsonPath("$.explanation").value(notNullValue()))
+                .andExpect(jsonPath("$.operatorAction").value(notNullValue()));
     }
 
     @Test
@@ -372,6 +390,8 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$.targetCellId").value("cell-use1-b"))
                 .andExpect(jsonPath("$.state").value("RUNNING"))
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.explanation").value(notNullValue()))
+                .andExpect(jsonPath("$.operatorAction").value(notNullValue()))
                 .andExpect(jsonPath("$.executionId", notNullValue()));
 
         mockMvc.perform(get("/api/workloads"))
@@ -397,7 +417,9 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$[0].workloadId").value(workloadId))
                 .andExpect(jsonPath("$[0].sourceCellId").value("cell-use1-a"))
                 .andExpect(jsonPath("$[0].targetCellId").value("cell-use1-b"))
-                .andExpect(jsonPath("$[0].status").value("ACTIVE"));
+                .andExpect(jsonPath("$[0].status").value("ACTIVE"))
+                .andExpect(jsonPath("$[0].explanation").value(notNullValue()))
+                .andExpect(jsonPath("$[0].operatorAction").value(notNullValue()));
 
         mockMvc.perform(get("/api/events"))
                 .andExpect(status().isOk())
@@ -451,7 +473,9 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$.sourceCellId").value("cell-use1-b"))
                 .andExpect(jsonPath("$.targetCellId").value("cell-use1-a"))
                 .andExpect(jsonPath("$.state").value("RUNNING"))
-                .andExpect(jsonPath("$.status").value("ROLLED_BACK"));
+                .andExpect(jsonPath("$.status").value("ROLLED_BACK"))
+                .andExpect(jsonPath("$.explanation").value(notNullValue()))
+                .andExpect(jsonPath("$.operatorAction").value(notNullValue()));
 
         mockMvc.perform(get("/api/workloads"))
                 .andExpect(status().isOk())

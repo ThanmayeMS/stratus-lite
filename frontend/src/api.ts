@@ -38,7 +38,10 @@ export interface Workload {
 
 export interface CandidateScore {
   cellId: string;
+  eligible: boolean;
   score: number;
+  projectedUtilizationPercent: number;
+  policySummary: string;
   reason: string;
 }
 
@@ -76,6 +79,8 @@ export interface RebalanceRecommendation {
   targetCellId: string;
   strategy: PlacementStrategy;
   reason: string;
+  explanation: string;
+  operatorAction: string;
   priority: number;
 }
 
@@ -87,6 +92,8 @@ export interface RebalanceExecutionResult {
   state: WorkloadState;
   status: RebalanceExecutionStatus;
   message: string;
+  explanation: string;
+  operatorAction: string;
 }
 
 export interface RebalanceExecutionRecord {
@@ -95,6 +102,8 @@ export interface RebalanceExecutionRecord {
   sourceCellId: string;
   targetCellId: string;
   status: RebalanceExecutionStatus;
+  explanation: string;
+  operatorAction: string;
   createdAt: string;
   rolledBackAt: string | null;
 }
@@ -114,6 +123,8 @@ export interface CapacityInsight {
   riskScore: number;
   riskLevel: CapacityRiskLevel;
   summary: string;
+  explanation: string;
+  operatorAction: string;
 }
 
 export interface SimulationResult {
@@ -122,6 +133,8 @@ export interface SimulationResult {
   maxUtilizationPercent: number;
   affectedWorkloads: number;
   incident: Incident;
+  explanation: string;
+  operatorAction: string;
 }
 
 export interface CreateWorkloadPayload {

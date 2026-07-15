@@ -8,7 +8,8 @@ public record SimulationResult(
         CellStatus cellStatus,
         double maxUtilizationPercent,
         int affectedWorkloads,
-        Incident incident
+        Incident incident,
+        String explanation,
+        String operatorAction
 ) {
 }
-

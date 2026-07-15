@@ -121,11 +121,17 @@ public class RebalanceService {
         fleetService.releaseCapacity(recommendation.sourceCellId(), workload.demand());
         fleetService.reserveCapacity(recommendation.targetCellId(), workload.demand());
         Workload migrated = workloadService.markMigrated(workload.id(), recommendation.targetCellId());
+        String explanation = "Executed because %s. %s"
+                .formatted(recommendation.reason(), recommendation.explanation());
+        String operatorAction = "Monitor workload %s on %s; rollback remains available while the execution is active."
+                .formatted(migrated.id(), recommendation.targetCellId());
         RebalanceExecutionRecord execution = RebalanceExecutionRecord.active(
                 "rbe-" + UUID.randomUUID(),
                 migrated.id(),
                 recommendation.sourceCellId(),
                 recommendation.targetCellId(),
+                explanation,
+                operatorAction,
                 Instant.now(clock)
         );
         executionRepository.save(execution);
@@ -146,7 +152,9 @@ public class RebalanceService {
                 migrated.state(),
                 execution.status(),
                 "Migrated workload %s from %s to %s"
-                        .formatted(migrated.id(), recommendation.sourceCellId(), recommendation.targetCellId())
+                        .formatted(migrated.id(), recommendation.sourceCellId(), recommendation.targetCellId()),
+                explanation,
+                operatorAction
         );
     }
 
@@ -186,7 +194,11 @@ public class RebalanceService {
         fleetService.releaseCapacity(execution.targetCellId(), workload.demand());
         fleetService.reserveCapacity(execution.sourceCellId(), workload.demand());
         Workload rolledBackWorkload = workloadService.markMigrated(workload.id(), execution.sourceCellId());
-        RebalanceExecutionRecord rolledBackExecution = execution.rolledBack(Instant.now(clock));
+        String explanation = "Rolled back because the original source cell is ACTIVE and has enough capacity for workload %s."
+                .formatted(workload.id());
+        String operatorAction = "Verify workload %s is healthy on %s before starting another migration."
+                .formatted(workload.id(), execution.sourceCellId());
+        RebalanceExecutionRecord rolledBackExecution = execution.rolledBack(Instant.now(clock), explanation, operatorAction);
         executionRepository.save(rolledBackExecution);
         eventService.record(
                 ControlPlaneEventType.REBALANCE_ROLLED_BACK,
@@ -210,7 +222,9 @@ public class RebalanceService {
                 rolledBackWorkload.state(),
                 rolledBackExecution.status(),
                 "Rolled back workload %s from %s to %s"
-                        .formatted(rolledBackWorkload.id(), execution.targetCellId(), execution.sourceCellId())
+                        .formatted(rolledBackWorkload.id(), execution.targetCellId(), execution.sourceCellId()),
+                explanation,
+                operatorAction
         );
     }
 
@@ -230,12 +244,19 @@ public class RebalanceService {
                     targetCandidates,
                     PlacementStrategy.LEAST_ALLOCATED
             );
+            String reason = reason(sourceCell);
+            String explanation = "Source cell %s triggered rebalance: %s Target decision: %s"
+                    .formatted(sourceCell.id(), reason, decision.explanation());
+            String operatorAction = "Execute migration for workload %s to %s, then verify migration history."
+                    .formatted(workload.id(), decision.selectedCell().id());
             return Optional.of(new RebalanceRecommendation(
                     workload.id(),
                     sourceCell.id(),
                     decision.selectedCell().id(),
                     PlacementStrategy.LEAST_ALLOCATED,
-                    reason(sourceCell),
+                    reason,
+                    explanation,
+                    operatorAction,
                     priority
             ));
         } catch (NoPlacementFoundException ignored) {

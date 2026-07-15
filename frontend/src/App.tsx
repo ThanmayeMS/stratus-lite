@@ -617,6 +617,8 @@ export function App() {
                         <strong>{shortId(recommendation.workloadId)}</strong>
                         <span>{recommendation.sourceCellId} → {recommendation.targetCellId}</span>
                         <p>{recommendation.reason}</p>
+                        <p>{recommendation.explanation}</p>
+                        <p><strong>Next:</strong> {recommendation.operatorAction}</p>
                       </div>
                       <button
                         type="button"
@@ -652,7 +654,8 @@ export function App() {
                       <div>
                         <strong>{shortId(execution.workloadId)}</strong>
                         <span>{execution.sourceCellId} → {execution.targetCellId}</span>
-                        <p>{migrationStory(execution)}</p>
+                        <p>{execution.explanation || migrationStory(execution)}</p>
+                        <p><strong>Next:</strong> {execution.operatorAction || "Review migration history before taking another action."}</p>
                       </div>
                       <span className={`execution-status ${execution.status.toLowerCase()}`}>
                         {execution.status}
@@ -721,7 +724,12 @@ export function App() {
                       {latestPlacement.candidates.map((candidate) => (
                         <div key={candidate.cellId} className="candidate-row">
                           <span>{candidate.cellId}</span>
-                          <strong>{candidate.score.toFixed(2)}</strong>
+                          <span className={`eligibility-pill ${candidate.eligible ? "eligible" : "rejected"}`}>
+                            {candidate.eligible ? "eligible" : "rejected"}
+                          </span>
+                          <strong>{candidate.eligible ? candidate.score.toFixed(2) : "blocked"}</strong>
+                          <small>Projected util {candidate.projectedUtilizationPercent.toFixed(1)}%</small>
+                          <p>{candidate.policySummary}</p>
                           <p>{candidate.reason}</p>
                         </div>
                       ))}
@@ -742,6 +750,7 @@ export function App() {
                       <div>
                         <strong>{incident.type}</strong>
                         <span>{incident.message}</span>
+                        <p>{incidentStory(incident)}</p>
                       </div>
                     </div>
                   ))}
@@ -756,6 +765,8 @@ export function App() {
                       <span>{capacityInsight.riskLevel}</span>
                     </div>
                     <p>{capacityInsight.summary}</p>
+                    <p className="plain-explain">{capacityInsight.explanation}</p>
+                    <p className="plain-explain"><strong>Next:</strong> {capacityInsight.operatorAction}</p>
                     <div className="risk-facts">
                       <span>Max util <strong>{capacityInsight.maxUtilizationPercent.toFixed(1)}%</strong></span>
                       <span>Overloaded <strong>{capacityInsight.overloadedCells}</strong></span>
@@ -863,6 +874,19 @@ function eventStory(event: ControlPlaneEvent) {
     return "A workload changed state in the control plane.";
   }
   return "This is an audit record that helps operators understand what changed.";
+}
+
+function incidentStory(incident: Incident) {
+  if (incident.type.includes("DOWN")) {
+    return "This incident matters because workloads on a down cell cannot be trusted until they are restored elsewhere.";
+  }
+  if (incident.type.includes("OVERLOADED")) {
+    return "This incident matters because a hot cell can become a reliability risk if more demand lands there.";
+  }
+  if (incident.type.includes("LOAD")) {
+    return "This incident records a load change so operators can connect capacity pressure to later decisions.";
+  }
+  return "This incident explains a reliability signal the control plane is tracking.";
 }
 
 function migrationStory(execution: RebalanceExecutionRecord) {

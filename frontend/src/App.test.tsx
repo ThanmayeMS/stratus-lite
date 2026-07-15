@@ -68,6 +68,12 @@ describe("App", () => {
     expect(screen.getByText("Capacity risk")).toBeInTheDocument();
     expect(screen.getByText("LOW")).toBeInTheDocument();
     expect(screen.getByText("PLACEMENT_CREATED")).toBeInTheDocument();
+    expect(screen.getByText("eligible")).toBeInTheDocument();
+    expect(screen.getByText("rejected")).toBeInTheDocument();
+    expect(screen.getByText(/Projected util 31.3%/i)).toBeInTheDocument();
+    expect(screen.getByText(/Rejected by policy/i)).toBeInTheDocument();
+    expect(screen.getByText(/Risk score combines/i)).toBeInTheDocument();
+    expect(screen.getByText(/Target decision/i)).toBeInTheDocument();
     expect(screen.getByText("1 rebalance move ready")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /rebalance/i }).length).toBeGreaterThan(1);
     expect(screen.getByRole("button", { name: /migrations/i })).toBeInTheDocument();
@@ -216,7 +222,22 @@ function responseFor(url: string, method: string) {
         explanation: "Selected cell cell-use1-a with score 69.06 using LEAST_ALLOCATED",
         decidedAt: "2026-07-15T00:00:00Z",
         candidates: [
-          { cellId: "cell-use1-a", score: 69.06, reason: "lower projected utilization preserves more headroom" }
+          {
+            cellId: "cell-use1-a",
+            eligible: true,
+            score: 69.06,
+            projectedUtilizationPercent: 31.25,
+            policySummary: "Accepted: active in us-east, STANDARD supports STANDARD, capacity fits; projected utilization 31.25%",
+            reason: "lower projected utilization preserves more headroom"
+          },
+          {
+            cellId: "cell-usw2-a",
+            eligible: false,
+            score: 0,
+            projectedUtilizationPercent: 18.1,
+            policySummary: "Rejected by policy: region mismatch: workload needs us-east",
+            reason: "not eligible for this workload"
+          }
         ]
       }
     ];
@@ -248,7 +269,10 @@ function responseFor(url: string, method: string) {
       maxUtilizationPercent: 55.88,
       riskScore: 33,
       riskLevel: "LOW",
-      summary: "Fleet has healthy headroom and no urgent migration pressure"
+      summary: "Fleet has healthy headroom and no urgent migration pressure",
+      explanation:
+        "Risk score combines max utilization 55.88%, 0 overloaded cells, 0 down cells, 0 degraded workloads, 0 critical incidents, and 1 recommended moves.",
+      operatorAction: "Review and execute rebalance recommendations before adding more workload."
     };
   }
   if (url === "/api/events?limit=20") {
@@ -272,6 +296,9 @@ function responseFor(url: string, method: string) {
         targetCellId: "cell-use1-b",
         strategy: "LEAST_ALLOCATED",
         reason: "Source cell crossed the overload threshold; move workload to reduce hotspot risk",
+        explanation:
+          "Source cell cell-use1-a triggered rebalance: Source cell crossed the overload threshold; move workload to reduce hotspot risk Target decision: Selected cell cell-use1-b with score 44.12 using LEAST_ALLOCATED.",
+        operatorAction: "Execute migration for workload wl-demo to cell-use1-b, then verify migration history.",
         priority: 1
       }
     ];
@@ -284,6 +311,8 @@ function responseFor(url: string, method: string) {
         sourceCellId: "cell-use1-a",
         targetCellId: "cell-use1-b",
         status: "ACTIVE",
+        explanation: "Executed because the source cell was risky and the target was selected by policy.",
+        operatorAction: "Monitor workload wl-demo on cell-use1-b; rollback remains available while active.",
         createdAt: "2026-07-15T00:00:00Z",
         rolledBackAt: null
       }
@@ -297,7 +326,9 @@ function responseFor(url: string, method: string) {
       targetCellId: "cell-use1-b",
       state: "RUNNING",
       status: "ACTIVE",
-      message: "Migrated workload wl-demo from cell-use1-a to cell-use1-b"
+      message: "Migrated workload wl-demo from cell-use1-a to cell-use1-b",
+      explanation: "Executed because the source cell was risky and the target was selected by policy.",
+      operatorAction: "Monitor workload wl-demo on cell-use1-b; rollback remains available while active."
     };
   }
   if (url === "/api/rebalance/executions/rbe-demo/rollback") {
@@ -308,7 +339,9 @@ function responseFor(url: string, method: string) {
       targetCellId: "cell-use1-a",
       state: "RUNNING",
       status: "ROLLED_BACK",
-      message: "Rolled back workload wl-demo from cell-use1-b to cell-use1-a"
+      message: "Rolled back workload wl-demo from cell-use1-b to cell-use1-a",
+      explanation: "Rolled back because the original source cell is ACTIVE and has enough capacity.",
+      operatorAction: "Verify workload wl-demo is healthy on cell-use1-a before starting another migration."
     };
   }
   if (url === "/api/admin/reset") {
@@ -329,7 +362,9 @@ function responseFor(url: string, method: string) {
         cellId: "cell-use1-a",
         message: "Cell cell-use1-a is down",
         createdAt: "2026-07-15T00:00:00Z"
-      }
+      },
+      explanation: "The cell was marked DOWN, so assigned workloads were degraded and should be restored elsewhere.",
+      operatorAction: "Open rebalance recommendations and execute migrations for affected workloads."
     };
   }
   return {
@@ -338,6 +373,15 @@ function responseFor(url: string, method: string) {
     strategy: "LEAST_ALLOCATED",
     explanation: "Selected cell cell-use1-a with score 69.06 using LEAST_ALLOCATED",
     decidedAt: "2026-07-15T00:00:00Z",
-    candidates: []
+    candidates: [
+      {
+        cellId: "cell-use1-a",
+        eligible: true,
+        score: 69.06,
+        projectedUtilizationPercent: 31.25,
+        policySummary: "Accepted: active in us-east, STANDARD supports STANDARD, capacity fits; projected utilization 31.25%",
+        reason: "lower projected utilization preserves more headroom"
+      }
+    ]
   };
 }
