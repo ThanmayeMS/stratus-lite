@@ -23,7 +23,5 @@
 - Add Docker Compose.
 - Add integration tests.
 - Add GitHub Actions CI.
-- Add screenshots.
 - Polish README.
-- Create demo script and resume bullets.
-
+- Create testing guide, V1 release notes, demo script, smoke test, and resume bullets.

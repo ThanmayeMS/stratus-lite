@@ -14,30 +14,30 @@ This project is designed to demonstrate practical SDE skills without requiring p
 - Capacity-aware scheduling algorithms
 - Workload lifecycle orchestration
 - Incident simulation and rebalancing
-- Local observability and metrics
+- Auditability and operational risk insights
 - Test automation and CI
 - Docker Compose based local development
 
-## MVP Scope
+## V1 Scope
 
-The 3-day target is intentionally focused:
+The first version is intentionally focused:
 
 - One Spring Boot backend with clean internal modules
 - One React + TypeScript dashboard
 - PostgreSQL for durable state
-- Optional Redis for caching/locks
 - Docker Compose for one-command local startup
 - Placement engine using `Filter -> Score -> Bind`
-- Workload lifecycle: `REQUESTED -> PLACED -> RUNNING -> MIGRATING`
+- Workload lifecycle: `REQUESTED -> RUNNING -> DEGRADED -> MIGRATING -> RUNNING`
 - Incident simulation for overloaded or failed cells
-- Rebalance recommendations
+- Rebalance recommendations and executable migrations
+- Capacity risk insight and control-plane audit timeline
 - Unit and integration tests
-- README screenshots, architecture notes, and demo script
+- Architecture notes, testing guide, release notes, demo script, and smoke test
 
 ## Current Status
 
-- Backend project scaffolded with Spring Boot.
-- Core fleet, workload, and placement domain model implemented.
+- V1 backend implemented with Spring Boot.
+- Core fleet, workload, placement, incident, audit, and insight domain model implemented.
 - Placement engine supports `BEST_FIT`, `LEAST_ALLOCATED`, and `BALANCED` strategies.
 - REST APIs expose seeded cells, workload creation, workload placement, and placement history.
 - React dashboard shows fleet health, workload creation, placement outcomes, incidents, and rebalance recommendations.
@@ -47,6 +47,27 @@ The 3-day target is intentionally focused:
 - Docker Compose runs PostgreSQL, the Spring Boot backend, and the production dashboard together.
 - Frontend and backend test suites run locally and in GitHub Actions.
 - Unit and integration tests cover placement scoring, filtering, API flow, and no-capacity failure behavior.
+
+## V1 Proof Commands
+
+Run the full automated verification suite:
+
+```bash
+make test
+```
+
+Run the end-to-end smoke test after the backend is live:
+
+```bash
+make smoke
+```
+
+Project proof docs:
+
+- [Architecture notes](docs/architecture.md)
+- [Demo script](docs/demo-script.md)
+- [Testing guide](docs/testing.md)
+- [V1 release notes](docs/v1-release.md)
 
 ## Core Domain
 
@@ -216,16 +237,7 @@ pnpm --dir frontend build
 
 ## Demo Script
 
-1. Start the local stack.
-2. Show seeded cells and capacity.
-3. Submit a workload request.
-4. Show placement score breakdown.
-5. Simulate a load spike or cell failure.
-6. Show incident creation.
-7. Generate a rebalance recommendation.
-8. Execute the migration and show workload/capacity state moving to the target cell.
-9. Show the audit timeline for the full control-plane sequence.
-10. Show the capacity risk score changing as incidents and migrations occur.
+Use the dedicated V1 walkthrough in [docs/demo-script.md](docs/demo-script.md).
 
 ## Resume Bullets
 
