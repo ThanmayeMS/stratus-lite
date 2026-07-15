@@ -89,7 +89,7 @@ export function App() {
   const latestPlacement = placements.at(-1);
   const criticalIncidents = incidents.filter((incident) => incident.severity === "CRITICAL").length;
   const activeCells = cells.filter((cell) => cell.status === "ACTIVE").length;
-  const placedWorkloads = workloads.filter((workload) => workload.state === "PLACED").length;
+  const activeWorkloads = workloads.filter((workload) => ["PLACED", "RUNNING"].includes(workload.state)).length;
 
   async function mutate(action: () => Promise<unknown>, successMessage: string) {
     setIsMutating(true);
@@ -157,7 +157,7 @@ export function App() {
         <>
           <section className="metric-grid" aria-label="Control plane summary">
             <Metric icon={<Server size={20} />} label="Active cells" value={`${activeCells}/${cells.length}`} />
-            <Metric icon={<Database size={20} />} label="Placed workloads" value={placedWorkloads.toString()} />
+            <Metric icon={<Database size={20} />} label="Active workloads" value={activeWorkloads.toString()} />
             <Metric icon={<AlertTriangle size={20} />} label="Open incidents" value={incidents.length.toString()} />
             <Metric icon={<MoveRight size={20} />} label="Rebalance moves" value={recommendations.length.toString()} />
           </section>
@@ -335,6 +335,17 @@ export function App() {
                       <strong>{shortId(recommendation.workloadId)}</strong>
                       <span>{recommendation.sourceCellId} → {recommendation.targetCellId}</span>
                     </div>
+                    <button
+                      className="mini-button"
+                      onClick={() => void mutate(
+                        () => api.executeRebalance(recommendation),
+                        "Rebalance migration executed"
+                      )}
+                      disabled={isMutating}
+                    >
+                      <MoveRight size={15} />
+                      Execute
+                    </button>
                   </div>
                 ))}
               </div>

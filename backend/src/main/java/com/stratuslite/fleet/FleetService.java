@@ -45,6 +45,13 @@ public class FleetService {
     }
 
     @Transactional
+    public synchronized Cell releaseCapacity(String cellId, ResourceVector demand) {
+        Cell released = getCell(cellId).release(demand);
+        cellRepository.save(released);
+        return released;
+    }
+
+    @Transactional
     public synchronized Cell applyLoadSpike(String cellId, ResourceVector load) {
         Cell spiked = getCell(cellId).applyLoad(load);
         cellRepository.save(spiked);

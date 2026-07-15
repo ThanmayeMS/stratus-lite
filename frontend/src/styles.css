@@ -70,7 +70,8 @@ h2 {
 .icon-button,
 .primary-button,
 .secondary-button,
-.danger-button {
+.danger-button,
+.mini-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -96,6 +97,15 @@ h2 {
 .danger-button {
   background: #af3029;
   color: #ffffff;
+}
+
+.mini-button {
+  min-height: 32px;
+  padding: 0 10px;
+  background: #ffffff;
+  border-color: #ccd5e1;
+  color: #243247;
+  font-size: 0.78rem;
 }
 
 .banner {
@@ -345,6 +355,16 @@ th {
   color: #176b5d;
 }
 
+.state-badge.running {
+  background: #e8f5f0;
+  color: #176b5d;
+}
+
+.state-badge.migrating {
+  background: #fff8e6;
+  color: #8a6100;
+}
+
 .state-badge.degraded {
   background: #fff1f1;
   color: #af3029;
@@ -367,7 +387,8 @@ th {
 .candidate-row,
 .incident-item,
 .move-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -438,4 +459,3 @@ th {
     grid-template-columns: 1fr;
   }
 }
-

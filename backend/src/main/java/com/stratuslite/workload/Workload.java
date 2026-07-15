@@ -50,6 +50,10 @@ public record Workload(
         return new Workload(id, tenantId, region, tier, demand, WorkloadState.DEGRADED, assignedCellId, createdAt, now);
     }
 
+    public Workload migratedTo(String cellId, Instant now) {
+        return new Workload(id, tenantId, region, tier, demand, WorkloadState.RUNNING, cellId, createdAt, now);
+    }
+
     public WorkloadRequest toPlacementRequest() {
         return new WorkloadRequest(id, tenantId, region, tier, demand);
     }

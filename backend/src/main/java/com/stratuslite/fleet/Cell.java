@@ -49,6 +49,13 @@ public record Cell(
         return new Cell(id, region, tier, status, totalCapacity, usedCapacity.plus(demand));
     }
 
+    public Cell release(ResourceVector demand) {
+        if (!usedCapacity.canFit(demand)) {
+            throw new IllegalArgumentException("cell does not have enough used capacity to release");
+        }
+        return new Cell(id, region, tier, status, totalCapacity, usedCapacity.minus(demand));
+    }
+
     public Cell applyLoad(ResourceVector load) {
         ResourceVector newUsage = usedCapacity.plus(load);
         if (!totalCapacity.canFit(newUsage)) {

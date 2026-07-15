@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RebalanceService {
@@ -52,6 +53,51 @@ public class RebalanceService {
         }
 
         return recommendations;
+    }
+
+    @Transactional
+    public RebalanceExecutionResult execute(RebalanceExecutionCommand command) {
+        RebalanceRecommendation recommendation = recommendations().stream()
+                .filter(candidate -> candidate.workloadId().equals(command.workloadId()))
+                .filter(candidate -> candidate.sourceCellId().equals(command.sourceCellId()))
+                .filter(candidate -> candidate.targetCellId().equals(command.targetCellId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "No current rebalance recommendation matches the requested migration"
+                ));
+
+        Workload workload = workloadService.getWorkload(recommendation.workloadId());
+        if (!recommendation.sourceCellId().equals(workload.assignedCellId())) {
+            throw new IllegalStateException(
+                    "Workload %s is not assigned to source cell %s"
+                            .formatted(workload.id(), recommendation.sourceCellId())
+            );
+        }
+
+        Cell targetCell = fleetService.getCell(recommendation.targetCellId());
+        if (targetCell.status() != CellStatus.ACTIVE) {
+            throw new IllegalStateException(
+                    "Target cell %s is not ACTIVE".formatted(targetCell.id())
+            );
+        }
+        if (!targetCell.canHost(workload.tier(), workload.region(), workload.demand())) {
+            throw new IllegalStateException(
+                    "Target cell %s no longer has enough available capacity".formatted(targetCell.id())
+            );
+        }
+
+        fleetService.releaseCapacity(recommendation.sourceCellId(), workload.demand());
+        fleetService.reserveCapacity(recommendation.targetCellId(), workload.demand());
+        Workload migrated = workloadService.markMigrated(workload.id(), recommendation.targetCellId());
+
+        return new RebalanceExecutionResult(
+                migrated.id(),
+                recommendation.sourceCellId(),
+                recommendation.targetCellId(),
+                migrated.state(),
+                "Migrated workload %s from %s to %s"
+                        .formatted(migrated.id(), recommendation.sourceCellId(), recommendation.targetCellId())
+        );
     }
 
     private boolean needsRebalance(Cell cell) {

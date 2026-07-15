@@ -74,6 +74,28 @@ describe("App", () => {
       );
     });
   });
+
+  test("executes a rebalance recommendation", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findByText("cell-use1-a → cell-use1-b");
+    await user.click(screen.getByRole("button", { name: /execute/i }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/rebalance/executions",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({
+            workloadId: "wl-demo",
+            sourceCellId: "cell-use1-a",
+            targetCellId: "cell-use1-b"
+          })
+        })
+      );
+    });
+  });
 });
 
 function mockFetch(input: RequestInfo | URL) {
@@ -129,6 +151,15 @@ function responseFor(url: string) {
         priority: 1
       }
     ];
+  }
+  if (url === "/api/rebalance/executions") {
+    return {
+      workloadId: "wl-demo",
+      sourceCellId: "cell-use1-a",
+      targetCellId: "cell-use1-b",
+      state: "RUNNING",
+      message: "Migrated workload wl-demo from cell-use1-a to cell-use1-b"
+    };
   }
   return {
     workloadId: "wl-demo",

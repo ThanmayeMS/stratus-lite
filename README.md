@@ -143,6 +143,7 @@ Core endpoints:
 - `POST /api/simulations/cell-failure` - mark a cell down and degrade assigned workloads.
 - `GET /api/incidents` - list simulated operational incidents.
 - `GET /api/rebalance/recommendations` - recommend workload moves away from overloaded or down cells.
+- `POST /api/rebalance/executions` - execute a recommended migration and move capacity between cells.
 
 Example workload request:
 
@@ -218,11 +219,11 @@ pnpm --dir frontend build
 5. Simulate a load spike or cell failure.
 6. Show incident creation.
 7. Generate a rebalance recommendation.
-8. Execute or preview migration.
+8. Execute the migration and show workload/capacity state moving to the target cell.
 
 ## Resume Bullets
 
 - Built a local cloud workload placement control plane using Java, Spring Boot, React, PostgreSQL, and Docker Compose.
 - Implemented a capacity-aware `Filter -> Score -> Bind` scheduler with explainable scoring strategies across CPU, memory, storage, and IOPS.
-- Added workload lifecycle orchestration, overload simulation, incident detection, and rebalance recommendations.
+- Added workload lifecycle orchestration, overload simulation, incident detection, and executable rebalance migrations.
 - Wrote automated tests for placement correctness, API behavior, and failure scenarios, with GitHub Actions CI.

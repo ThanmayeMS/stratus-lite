@@ -174,6 +174,52 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$[0].reason").value("Source cell is DOWN; workload should be restored on a healthy cell"));
     }
 
+    @Test
+    void executesRebalanceRecommendationAndMovesCapacity() throws Exception {
+        String workloadId = createAndPlaceStandardWorkloadOnCellUse1A();
+
+        mockMvc.perform(post("/api/simulations/cell-failure")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "cellId": "cell-use1-a"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/rebalance/executions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workloadId": "%s",
+                                  "sourceCellId": "cell-use1-a",
+                                  "targetCellId": "cell-use1-b"
+                                }
+                                """.formatted(workloadId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workloadId").value(workloadId))
+                .andExpect(jsonPath("$.sourceCellId").value("cell-use1-a"))
+                .andExpect(jsonPath("$.targetCellId").value("cell-use1-b"))
+                .andExpect(jsonPath("$.state").value("RUNNING"));
+
+        mockMvc.perform(get("/api/workloads"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(workloadId))
+                .andExpect(jsonPath("$[0].state").value("RUNNING"))
+                .andExpect(jsonPath("$[0].assignedCellId").value("cell-use1-b"));
+
+        mockMvc.perform(get("/api/cells"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("cell-use1-a"))
+                .andExpect(jsonPath("$[0].usedCapacity.cpuCores").value(4))
+                .andExpect(jsonPath("$[1].id").value("cell-use1-b"))
+                .andExpect(jsonPath("$[1].usedCapacity.cpuCores").value(20));
+
+        mockMvc.perform(get("/api/rebalance/recommendations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
     private JsonNode read(MvcResult result) throws Exception {
         return objectMapper.readTree(result.getResponse().getContentAsString());
     }

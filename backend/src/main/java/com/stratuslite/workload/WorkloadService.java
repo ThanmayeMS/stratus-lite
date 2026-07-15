@@ -59,6 +59,13 @@ public class WorkloadService {
     }
 
     @Transactional
+    public synchronized Workload markMigrated(String workloadId, String cellId) {
+        Workload migrated = getWorkload(workloadId).migratedTo(cellId, Instant.now(clock));
+        workloadRepository.save(migrated);
+        return migrated;
+    }
+
+    @Transactional
     public synchronized List<Workload> markAssignedWorkloadsDegraded(String cellId) {
         List<Workload> degradedWorkloads = listWorkloadsOnCell(cellId).stream()
                 .map(workload -> workload.degraded(Instant.now(clock)))

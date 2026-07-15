@@ -67,6 +67,14 @@ export interface RebalanceRecommendation {
   priority: number;
 }
 
+export interface RebalanceExecutionResult {
+  workloadId: string;
+  sourceCellId: string;
+  targetCellId: string;
+  state: WorkloadState;
+  message: string;
+}
+
 export interface SimulationResult {
   cellId: string;
   cellStatus: CellStatus;
@@ -105,6 +113,15 @@ export const api = {
   placements: () => request<Placement[]>("/api/placements"),
   incidents: () => request<Incident[]>("/api/incidents"),
   recommendations: () => request<RebalanceRecommendation[]>("/api/rebalance/recommendations"),
+  executeRebalance: (recommendation: RebalanceRecommendation) =>
+    request<RebalanceExecutionResult>("/api/rebalance/executions", {
+      method: "POST",
+      body: JSON.stringify({
+        workloadId: recommendation.workloadId,
+        sourceCellId: recommendation.sourceCellId,
+        targetCellId: recommendation.targetCellId
+      })
+    }),
   createWorkload: (payload: CreateWorkloadPayload) =>
     request<Workload>("/api/workloads", {
       method: "POST",
@@ -133,4 +150,3 @@ export const api = {
       body: JSON.stringify({ cellId })
     })
 };
-
