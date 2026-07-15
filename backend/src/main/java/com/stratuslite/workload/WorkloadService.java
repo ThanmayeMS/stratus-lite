@@ -1,5 +1,8 @@
 package com.stratuslite.workload;
 
+import com.stratuslite.audit.ControlPlaneEventService;
+import com.stratuslite.audit.ControlPlaneEventSeverity;
+import com.stratuslite.audit.ControlPlaneEventType;
 import com.stratuslite.common.ResourceNotFoundException;
 import java.time.Clock;
 import java.time.Instant;
@@ -13,15 +16,24 @@ import org.springframework.transaction.annotation.Transactional;
 public class WorkloadService {
 
     private final WorkloadRepository workloadRepository;
+    private final ControlPlaneEventService eventService;
     private final Clock clock;
 
     @Autowired
-    public WorkloadService(WorkloadRepository workloadRepository) {
-        this(workloadRepository, Clock.systemUTC());
+    public WorkloadService(
+            WorkloadRepository workloadRepository,
+            ControlPlaneEventService eventService
+    ) {
+        this(workloadRepository, eventService, Clock.systemUTC());
     }
 
-    WorkloadService(WorkloadRepository workloadRepository, Clock clock) {
+    WorkloadService(
+            WorkloadRepository workloadRepository,
+            ControlPlaneEventService eventService,
+            Clock clock
+    ) {
         this.workloadRepository = workloadRepository;
+        this.eventService = eventService;
         this.clock = clock;
     }
 
@@ -30,6 +42,14 @@ public class WorkloadService {
         String workloadId = "wl-" + UUID.randomUUID();
         Workload workload = Workload.requested(workloadId, command, Instant.now(clock));
         workloadRepository.save(workload);
+        eventService.record(
+                ControlPlaneEventType.WORKLOAD_CREATED,
+                ControlPlaneEventSeverity.INFO,
+                "workload",
+                workload.id(),
+                "Created workload request %s for tenant %s in %s"
+                        .formatted(workload.id(), workload.tenantId(), workload.region())
+        );
         return workload;
     }
 

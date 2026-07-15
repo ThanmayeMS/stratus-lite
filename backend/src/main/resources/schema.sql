@@ -60,3 +60,16 @@ CREATE TABLE IF NOT EXISTS incidents (
     message VARCHAR(500) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS control_plane_events (
+    id VARCHAR(80) PRIMARY KEY,
+    type VARCHAR(80) NOT NULL,
+    severity VARCHAR(40) NOT NULL,
+    subject_type VARCHAR(80) NOT NULL,
+    subject_id VARCHAR(120) NOT NULL,
+    message VARCHAR(600) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_control_plane_events_created_at
+    ON control_plane_events (created_at DESC);

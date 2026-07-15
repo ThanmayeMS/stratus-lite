@@ -386,6 +386,7 @@ th {
 
 .candidate-row,
 .incident-item,
+.event-item,
 .move-item {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -403,21 +404,34 @@ th {
   align-items: flex-start;
 }
 
+.event-item {
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
 .incident-item div,
+.event-item div,
 .move-item div {
   display: grid;
   gap: 3px;
 }
 
 .incident-item span,
+.event-item span,
 .move-item span {
   color: #607086;
   font-size: 0.82rem;
 }
 
 .incident-item.critical svg,
-.incident-item.warning svg {
+.incident-item.warning svg,
+.event-item.critical svg,
+.event-item.warning svg {
   color: #af3029;
+}
+
+.event-item.info svg {
+  color: #2a7ab0;
 }
 
 .priority {

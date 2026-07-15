@@ -56,6 +56,7 @@ describe("App", () => {
     expect(screen.getAllByText("cell-use1-a").length).toBeGreaterThan(0);
     expect(screen.getAllByText("wl-demo").length).toBeGreaterThan(0);
     expect(screen.getByText("CELL_OVERLOADED")).toBeInTheDocument();
+    expect(screen.getByText("PLACEMENT_CREATED")).toBeInTheDocument();
     expect(screen.getByText("cell-use1-a → cell-use1-b")).toBeInTheDocument();
   });
 
@@ -136,6 +137,19 @@ function responseFor(url: string) {
         severity: "WARNING",
         cellId: "cell-use1-a",
         message: "Cell cell-use1-a crossed 85% utilization",
+        createdAt: "2026-07-15T00:00:00Z"
+      }
+    ];
+  }
+  if (url === "/api/events?limit=20") {
+    return [
+      {
+        id: "evt-demo",
+        type: "PLACEMENT_CREATED",
+        severity: "INFO",
+        subjectType: "workload",
+        subjectId: "wl-demo",
+        message: "Placed workload wl-demo on cell-use1-a using LEAST_ALLOCATED",
         createdAt: "2026-07-15T00:00:00Z"
       }
     ];

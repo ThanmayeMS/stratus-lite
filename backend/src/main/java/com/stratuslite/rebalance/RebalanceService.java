@@ -1,5 +1,8 @@
 package com.stratuslite.rebalance;
 
+import com.stratuslite.audit.ControlPlaneEventService;
+import com.stratuslite.audit.ControlPlaneEventSeverity;
+import com.stratuslite.audit.ControlPlaneEventType;
 import com.stratuslite.fleet.Cell;
 import com.stratuslite.fleet.CellStatus;
 import com.stratuslite.fleet.FleetService;
@@ -23,15 +26,18 @@ public class RebalanceService {
     private final FleetService fleetService;
     private final WorkloadService workloadService;
     private final PlacementEngine placementEngine;
+    private final ControlPlaneEventService eventService;
 
     public RebalanceService(
             FleetService fleetService,
             WorkloadService workloadService,
-            PlacementEngine placementEngine
+            PlacementEngine placementEngine,
+            ControlPlaneEventService eventService
     ) {
         this.fleetService = fleetService;
         this.workloadService = workloadService;
         this.placementEngine = placementEngine;
+        this.eventService = eventService;
     }
 
     public List<RebalanceRecommendation> recommendations() {
@@ -89,6 +95,14 @@ public class RebalanceService {
         fleetService.releaseCapacity(recommendation.sourceCellId(), workload.demand());
         fleetService.reserveCapacity(recommendation.targetCellId(), workload.demand());
         Workload migrated = workloadService.markMigrated(workload.id(), recommendation.targetCellId());
+        eventService.record(
+                ControlPlaneEventType.REBALANCE_EXECUTED,
+                ControlPlaneEventSeverity.INFO,
+                "workload",
+                migrated.id(),
+                "Migrated workload %s from %s to %s"
+                        .formatted(migrated.id(), recommendation.sourceCellId(), recommendation.targetCellId())
+        );
 
         return new RebalanceExecutionResult(
                 migrated.id(),

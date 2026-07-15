@@ -1,6 +1,7 @@
 package com.stratuslite.api;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -76,6 +77,11 @@ class StratusApiIntegrationTest {
         mockMvc.perform(get("/api/placements"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].workloadId").value(workloadId));
+
+        mockMvc.perform(get("/api/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[*].type", containsInAnyOrder("WORKLOAD_CREATED", "PLACEMENT_CREATED")));
     }
 
     @Test
@@ -139,6 +145,15 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$[0].sourceCellId").value("cell-use1-a"))
                 .andExpect(jsonPath("$[0].targetCellId").value("cell-use1-b"))
                 .andExpect(jsonPath("$[0].reason").value("Source cell crossed the overload threshold; move workload to reduce hotspot risk"));
+
+        mockMvc.perform(get("/api/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[*].type", containsInAnyOrder(
+                        "WORKLOAD_CREATED",
+                        "PLACEMENT_CREATED",
+                        "LOAD_SPIKE_SIMULATED"
+                )));
     }
 
     @Test
@@ -218,6 +233,16 @@ class StratusApiIntegrationTest {
         mockMvc.perform(get("/api/rebalance/recommendations"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
+
+        mockMvc.perform(get("/api/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(4)))
+                .andExpect(jsonPath("$[*].type", containsInAnyOrder(
+                        "WORKLOAD_CREATED",
+                        "PLACEMENT_CREATED",
+                        "CELL_FAILURE_SIMULATED",
+                        "REBALANCE_EXECUTED"
+                )));
     }
 
     private JsonNode read(MvcResult result) throws Exception {

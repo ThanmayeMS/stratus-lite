@@ -58,6 +58,16 @@ export interface Incident {
   createdAt: string;
 }
 
+export interface ControlPlaneEvent {
+  id: string;
+  type: string;
+  severity: IncidentSeverity;
+  subjectType: string;
+  subjectId: string;
+  message: string;
+  createdAt: string;
+}
+
 export interface RebalanceRecommendation {
   workloadId: string;
   sourceCellId: string;
@@ -112,6 +122,7 @@ export const api = {
   workloads: () => request<Workload[]>("/api/workloads"),
   placements: () => request<Placement[]>("/api/placements"),
   incidents: () => request<Incident[]>("/api/incidents"),
+  events: () => request<ControlPlaneEvent[]>("/api/events?limit=20"),
   recommendations: () => request<RebalanceRecommendation[]>("/api/rebalance/recommendations"),
   executeRebalance: (recommendation: RebalanceRecommendation) =>
     request<RebalanceExecutionResult>("/api/rebalance/executions", {

@@ -14,6 +14,7 @@ import {
 import {
   api,
   Cell,
+  ControlPlaneEvent,
   CreateWorkloadPayload,
   Incident,
   Placement,
@@ -40,6 +41,7 @@ export function App() {
   const [workloads, setWorkloads] = useState<Workload[]>([]);
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [events, setEvents] = useState<ControlPlaneEvent[]>([]);
   const [recommendations, setRecommendations] = useState<RebalanceRecommendation[]>([]);
   const [form, setForm] = useState<CreateWorkloadPayload>(defaultWorkload);
   const [strategy, setStrategy] = useState<PlacementStrategy>("LEAST_ALLOCATED");
@@ -54,11 +56,12 @@ export function App() {
     setIsLoading(true);
     setError(null);
     try {
-      const [nextCells, nextWorkloads, nextPlacements, nextIncidents, nextRecommendations] = await Promise.all([
+      const [nextCells, nextWorkloads, nextPlacements, nextIncidents, nextEvents, nextRecommendations] = await Promise.all([
         api.cells(),
         api.workloads(),
         api.placements(),
         api.incidents(),
+        api.events(),
         api.recommendations()
       ]);
 
@@ -66,6 +69,7 @@ export function App() {
       setWorkloads(nextWorkloads);
       setPlacements(nextPlacements);
       setIncidents(nextIncidents);
+      setEvents(nextEvents);
       setRecommendations(nextRecommendations);
       if (!selectedCellId && nextCells.length > 0) {
         setSelectedCellId(nextCells[0].id);
@@ -159,7 +163,7 @@ export function App() {
             <Metric icon={<Server size={20} />} label="Active cells" value={`${activeCells}/${cells.length}`} />
             <Metric icon={<Database size={20} />} label="Active workloads" value={activeWorkloads.toString()} />
             <Metric icon={<AlertTriangle size={20} />} label="Open incidents" value={incidents.length.toString()} />
-            <Metric icon={<MoveRight size={20} />} label="Rebalance moves" value={recommendations.length.toString()} />
+            <Metric icon={<Activity size={20} />} label="Audit events" value={events.length.toString()} />
           </section>
 
           <section className="workspace-grid">
@@ -318,6 +322,22 @@ export function App() {
                     <div>
                       <strong>{incident.type}</strong>
                       <span>{incident.message}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </DataPanel>
+
+            <DataPanel title="Audit events" eyebrow="Timeline">
+              <div className="stack-list">
+                {events.length === 0 ? (
+                  <p className="empty-copy">No events recorded.</p>
+                ) : events.map((event) => (
+                  <div key={event.id} className={`event-item ${event.severity.toLowerCase()}`}>
+                    <Activity size={17} />
+                    <div>
+                      <strong>{event.type}</strong>
+                      <span>{event.message}</span>
                     </div>
                   </div>
                 ))}
