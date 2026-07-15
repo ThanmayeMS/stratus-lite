@@ -46,6 +46,10 @@ public record Workload(
         return new Workload(id, tenantId, region, tier, demand, WorkloadState.PLACED, cellId, createdAt, now);
     }
 
+    public Workload degraded(Instant now) {
+        return new Workload(id, tenantId, region, tier, demand, WorkloadState.DEGRADED, assignedCellId, createdAt, now);
+    }
+
     public WorkloadRequest toPlacementRequest() {
         return new WorkloadRequest(id, tenantId, region, tier, demand);
     }
@@ -57,5 +61,8 @@ public record Workload(
             );
         }
     }
-}
 
+    public boolean isAssignedTo(String cellId) {
+        return cellId.equals(assignedCellId);
+    }
+}

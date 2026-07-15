@@ -105,6 +105,10 @@ Core endpoints:
 - `POST /api/workloads` - create a workload request.
 - `POST /api/workloads/{workloadId}/place?strategy=BEST_FIT` - place a workload using a strategy.
 - `GET /api/placements` - list placement decisions and candidate score explanations.
+- `POST /api/simulations/load-spike` - apply synthetic load to a cell and create an incident if it crosses the overload threshold.
+- `POST /api/simulations/cell-failure` - mark a cell down and degrade assigned workloads.
+- `GET /api/incidents` - list simulated operational incidents.
+- `GET /api/rebalance/recommendations` - recommend workload moves away from overloaded or down cells.
 
 Example workload request:
 

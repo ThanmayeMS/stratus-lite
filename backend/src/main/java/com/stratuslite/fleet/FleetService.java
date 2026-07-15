@@ -37,6 +37,26 @@ public class FleetService {
         return reserved;
     }
 
+    public synchronized Cell applyLoadSpike(String cellId, ResourceVector load) {
+        Cell spiked = getCell(cellId).applyLoad(load);
+        cells.put(cellId, spiked);
+        return spiked;
+    }
+
+    public synchronized Cell markDown(String cellId) {
+        Cell down = getCell(cellId).withStatus(CellStatus.DOWN);
+        cells.put(cellId, down);
+        return down;
+    }
+
+    public synchronized List<Cell> overloadedCells(double utilizationThreshold) {
+        return cells.values().stream()
+                .filter(cell -> cell.status() == CellStatus.ACTIVE)
+                .filter(cell -> cell.isOverloaded(utilizationThreshold))
+                .sorted(Comparator.comparing(Cell::id))
+                .toList();
+    }
+
     public synchronized List<Cell> activeCellsSnapshot() {
         return new ArrayList<>(cells.values());
     }
@@ -80,4 +100,3 @@ public class FleetService {
         cells.put(cell.id(), cell);
     }
 }
-

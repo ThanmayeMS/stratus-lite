@@ -45,6 +45,13 @@ public record ResourceVector(
                 + ratio(iops, total.iops)) / 4.0;
     }
 
+    public double maxUtilizationAgainst(ResourceVector total) {
+        return Math.max(
+                Math.max(ratio(cpuCores, total.cpuCores), ratio(memoryGb, total.memoryGb)),
+                Math.max(ratio(storageGb, total.storageGb), ratio(iops, total.iops))
+        );
+    }
+
     public double utilizationVarianceAgainst(ResourceVector total) {
         double cpu = ratio(cpuCores, total.cpuCores);
         double memory = ratio(memoryGb, total.memoryGb);
@@ -69,4 +76,3 @@ public record ResourceVector(
         return value * value;
     }
 }
-

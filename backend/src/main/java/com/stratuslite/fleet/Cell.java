@@ -27,6 +27,14 @@ public record Cell(
         return totalCapacity.minus(usedCapacity);
     }
 
+    public double maxUtilization() {
+        return usedCapacity.maxUtilizationAgainst(totalCapacity);
+    }
+
+    public boolean isOverloaded(double utilizationThreshold) {
+        return maxUtilization() >= utilizationThreshold;
+    }
+
     public boolean canHost(ServiceTier requiredTier, String requiredRegion, ResourceVector demand) {
         return status == CellStatus.ACTIVE
                 && region.equals(requiredRegion)
@@ -40,5 +48,16 @@ public record Cell(
         }
         return new Cell(id, region, tier, status, totalCapacity, usedCapacity.plus(demand));
     }
-}
 
+    public Cell applyLoad(ResourceVector load) {
+        ResourceVector newUsage = usedCapacity.plus(load);
+        if (!totalCapacity.canFit(newUsage)) {
+            throw new IllegalArgumentException("load spike would exceed total cell capacity");
+        }
+        return new Cell(id, region, tier, status, totalCapacity, newUsage);
+    }
+
+    public Cell withStatus(CellStatus newStatus) {
+        return new Cell(id, region, tier, newStatus, totalCapacity, usedCapacity);
+    }
+}

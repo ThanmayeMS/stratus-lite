@@ -37,6 +37,13 @@ public class WorkloadService {
                 .toList();
     }
 
+    public synchronized List<Workload> listWorkloadsOnCell(String cellId) {
+        return workloads.values().stream()
+                .filter(workload -> workload.isAssignedTo(cellId))
+                .sorted(Comparator.comparing(Workload::createdAt))
+                .toList();
+    }
+
     public synchronized Workload getWorkload(String workloadId) {
         Workload workload = workloads.get(workloadId);
         if (workload == null) {
@@ -50,5 +57,13 @@ public class WorkloadService {
         workloads.put(workloadId, placed);
         return placed;
     }
-}
 
+    public synchronized List<Workload> markAssignedWorkloadsDegraded(String cellId) {
+        List<Workload> degradedWorkloads = listWorkloadsOnCell(cellId).stream()
+                .map(workload -> workload.degraded(Instant.now(clock)))
+                .toList();
+
+        degradedWorkloads.forEach(workload -> workloads.put(workload.id(), workload));
+        return degradedWorkloads;
+    }
+}
