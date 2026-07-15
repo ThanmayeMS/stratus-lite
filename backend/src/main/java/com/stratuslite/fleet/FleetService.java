@@ -78,6 +78,12 @@ public class FleetService {
         return new ArrayList<>(cellRepository.findAll());
     }
 
+    @Transactional
+    public synchronized void resetFleet() {
+        cellRepository.deleteAll();
+        seedFleet();
+    }
+
     private void seedFleet() {
         add(new Cell(
                 "cell-use1-a",

@@ -26,6 +26,7 @@ import {
   RebalanceExecutionRecord,
   RebalanceRecommendation,
   ServiceTier,
+  STRATUS_API_BASE_URL,
   Workload
 } from "./api";
 
@@ -58,6 +59,9 @@ export function App() {
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [backendStatus, setBackendStatus] = useState("Checking backend");
+  const [lastAction, setLastAction] = useState("No action yet");
+  const [lastClick, setLastClick] = useState("No click captured yet");
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
@@ -94,8 +98,18 @@ export function App() {
       if (!selectedCellId && nextCells.length > 0) {
         setSelectedCellId(nextCells[0].id);
       }
+      setSelectedWorkloadId((currentWorkloadId) => {
+        const requested = nextWorkloads.filter((workload) => workload.state === "REQUESTED");
+        if (currentWorkloadId && requested.some((workload) => workload.id === currentWorkloadId)) {
+          return currentWorkloadId;
+        }
+        return requested.at(-1)?.id ?? "";
+      });
+      setBackendStatus(`Connected to ${STRATUS_API_BASE_URL}`);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Could not load dashboard data");
+      const message = nextError instanceof Error ? nextError.message : "Could not load dashboard data";
+      setError(message);
+      setBackendStatus(`Backend error: ${message}`);
     } finally {
       setIsLoading(false);
     }
@@ -104,6 +118,18 @@ export function App() {
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
+
+  useEffect(() => {
+    function trackPointerDown(event: PointerEvent) {
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      const button = target?.closest("button");
+      const label = button?.textContent?.trim().replace(/\s+/g, " ") || target?.textContent?.trim().slice(0, 60) || "page";
+      setLastClick(`${label} at ${new Date().toLocaleTimeString()}`);
+    }
+
+    window.addEventListener("pointerdown", trackPointerDown, true);
+    return () => window.removeEventListener("pointerdown", trackPointerDown, true);
+  }, []);
 
   const requestedWorkloads = useMemo(
     () => workloads.filter((workload) => workload.state === "REQUESTED"),
@@ -119,31 +145,51 @@ export function App() {
     setIsMutating(true);
     setError(null);
     setNotice(null);
+    setLastAction(`Running: ${successMessage}`);
     try {
       await action();
       setNotice(successMessage);
+      setLastAction(successMessage);
       await loadDashboard();
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Action failed");
+      const message = nextError instanceof Error ? nextError.message : "Action failed";
+      setError(message);
+      setLastAction(`Failed: ${message}`);
     } finally {
       setIsMutating(false);
     }
   }
 
-  async function handleCreateWorkload(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function createWorkload() {
+    let createdWorkloadId = "";
     await mutate(async () => {
       const workload = await api.createWorkload(form);
+      createdWorkloadId = workload.id;
       setSelectedWorkloadId(workload.id);
     }, "Workload request created");
+    return createdWorkloadId;
+  }
+
+  async function handleCreateWorkload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await createWorkload();
   }
 
   async function handlePlaceWorkload() {
     if (!selectedWorkloadId) {
       setError("Choose a requested workload before placing it");
+      setLastAction("Place workload blocked: choose a requested workload");
       return;
     }
     await mutate(() => api.placeWorkload(selectedWorkloadId, strategy), "Placement decision created");
+  }
+
+  async function handleCreateAndPlaceWorkload() {
+    const workloadId = await createWorkload();
+    if (!workloadId) {
+      return;
+    }
+    await mutate(() => api.placeWorkload(workloadId, strategy), "Workload created and placed");
   }
 
   return (
@@ -157,7 +203,22 @@ export function App() {
           <RefreshCw size={18} />
           Refresh
         </button>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => void mutate(() => api.resetDemo(), "Demo state reset")}
+          disabled={isMutating}
+        >
+          <Undo2 size={18} />
+          Reset demo
+        </button>
       </header>
+
+      <section className="ops-strip" aria-live="polite">
+        <span><strong>Backend</strong>{backendStatus}</span>
+        <span><strong>Last click</strong>{lastClick}</span>
+        <span><strong>Last action</strong>{lastAction}</span>
+      </section>
 
       {error && (
         <div className="banner banner-error" role="alert">
@@ -200,9 +261,13 @@ export function App() {
               <div className="cell-grid">
                 {cells.map((cell) => (
                   <button
+                    type="button"
                     key={cell.id}
                     className={`cell-tile ${cell.status.toLowerCase()} ${selectedCellId === cell.id ? "selected" : ""}`}
-                    onClick={() => setSelectedCellId(cell.id)}
+                    onClick={() => {
+                      setSelectedCellId(cell.id);
+                      setLastAction(`Selected ${cell.id}`);
+                    }}
                   >
                     <span className="cell-name">{cell.id}</span>
                     <span>{cell.region} · {cell.tier}</span>
@@ -248,9 +313,13 @@ export function App() {
                   <NumberField label="Storage" value={form.demand.storageGb} onChange={(value) => setForm({ ...form, demand: { ...form.demand, storageGb: value } })} />
                   <NumberField label="IOPS" value={form.demand.iops} onChange={(value) => setForm({ ...form, demand: { ...form.demand, iops: value } })} />
                 </div>
-                <button className="primary-button" disabled={isMutating}>
+                <button type="button" className="primary-button" onClick={() => void handleCreateAndPlaceWorkload()} disabled={isMutating}>
                   <Database size={18} />
                   Create workload
+                </button>
+                <button type="button" className="secondary-button" onClick={() => void createWorkload()} disabled={isMutating}>
+                  <Database size={18} />
+                  Create request only
                 </button>
               </form>
 
@@ -272,15 +341,15 @@ export function App() {
                     <option value="BALANCED">BALANCED</option>
                   </select>
                 </label>
-                <button className="secondary-button" onClick={() => void handlePlaceWorkload()} disabled={isMutating}>
+                <button type="button" className="secondary-button" onClick={() => void handlePlaceWorkload()} disabled={isMutating}>
                   <MoveRight size={18} />
                   Place workload
                 </button>
-                <button className="secondary-button" onClick={() => void mutate(() => api.simulateLoadSpike(selectedCellId), "Load spike simulated")} disabled={isMutating || !selectedCellId}>
+                <button type="button" className="secondary-button" onClick={() => void mutate(() => api.simulateLoadSpike(selectedCellId), "Load spike simulated")} disabled={isMutating || !selectedCellId}>
                   <Zap size={18} />
                   Spike selected cell
                 </button>
-                <button className="danger-button" onClick={() => void mutate(() => api.simulateCellFailure(selectedCellId), "Cell failure simulated")} disabled={isMutating || !selectedCellId}>
+                <button type="button" className="danger-button" onClick={() => void mutate(() => api.simulateCellFailure(selectedCellId), "Cell failure simulated")} disabled={isMutating || !selectedCellId}>
                   <AlertTriangle size={18} />
                   Fail selected cell
                 </button>
@@ -396,6 +465,7 @@ export function App() {
                       <span>{recommendation.sourceCellId} → {recommendation.targetCellId}</span>
                     </div>
                     <button
+                      type="button"
                       className="mini-button"
                       onClick={() => void mutate(
                         () => api.executeRebalance(recommendation),
@@ -426,6 +496,7 @@ export function App() {
                       {execution.status}
                     </span>
                     <button
+                      type="button"
                       className="mini-button"
                       onClick={() => void mutate(
                         () => api.rollbackRebalance(execution.id),

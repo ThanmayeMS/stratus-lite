@@ -44,6 +44,33 @@ button:disabled {
   margin-bottom: 18px;
 }
 
+.ops-strip {
+  display: grid;
+  grid-template-columns: 1.15fr 0.95fr 0.95fr;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.ops-strip span {
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #cfd8e6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #314055;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.ops-strip strong {
+  display: block;
+  margin-bottom: 2px;
+  color: #607086;
+  font-size: 0.68rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
 .eyebrow {
   margin: 0 0 5px;
   color: #607086;

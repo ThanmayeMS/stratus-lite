@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-http://localhost:8080}"
+BASE_URL="${BASE_URL:-http://localhost:8081}"
 
 if ! command -v curl >/dev/null 2>&1; then
   echo "curl is required" >&2
@@ -59,7 +59,10 @@ PY
 }
 
 echo "Running Stratus Lite smoke test against $BASE_URL"
-echo "Tip: use a fresh stack for repeatable demo output. For Docker, run: docker compose down -v && docker compose up --build"
+echo "Resetting demo state for repeatable output"
+
+request POST "/api/admin/reset" "" "$tmp_dir/reset.json"
+echo "Demo state reset"
 
 request GET "/api/cells" "" "$tmp_dir/cells.json"
 cell_count="$(python3 - "$tmp_dir/cells.json" <<'PY'

@@ -49,6 +49,10 @@ public class CellRepository {
         return count == null ? 0 : count;
     }
 
+    public void deleteAll() {
+        jdbcTemplate.update("DELETE FROM cells");
+    }
+
     public void save(Cell cell) {
         int updated = jdbcTemplate.update(
                 """

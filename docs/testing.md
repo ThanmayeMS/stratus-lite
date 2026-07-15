@@ -52,12 +52,12 @@ Run this after the backend is live:
 ./scripts/smoke-test.sh
 ```
 
-The smoke test creates and places a workload, simulates a source-cell failure, executes the recommended migration, checks capacity insight, and verifies audit events.
+The smoke test targets `http://localhost:8081` by default. It resets demo state, creates and places a workload, simulates a source-cell failure, executes the recommended migration, checks capacity insight, and verifies audit events.
 
 For repeatability against Docker Compose:
 
 ```bash
 docker compose down -v
 docker compose up --build
-./scripts/smoke-test.sh
+BASE_URL=http://localhost:8080 ./scripts/smoke-test.sh
 ```

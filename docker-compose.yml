@@ -20,6 +20,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
+      SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: postgres
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/stratus_lite
       SPRING_DATASOURCE_USERNAME: stratus

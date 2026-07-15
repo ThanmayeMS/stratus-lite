@@ -131,8 +131,22 @@ export interface CreateWorkloadPayload {
   demand: ResourceVector;
 }
 
+export interface DemoResetResponse {
+  message: string;
+}
+
+export const STRATUS_API_BASE_URL =
+  import.meta.env.VITE_STRATUS_API_BASE_URL ?? (import.meta.env.DEV ? "http://localhost:8081/api" : "/api");
+
+function apiUrl(path: string) {
+  if (!path.startsWith("/api")) {
+    return path;
+  }
+  return `${STRATUS_API_BASE_URL}${path.slice("/api".length)}`;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -142,7 +156,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     const error = await response.json().catch(() => null);
-    throw new Error(error?.message ?? `Request failed with status ${response.status}`);
+    if (response.status === 404 && path.startsWith("/api/")) {
+      throw new Error(
+        `Stratus backend did not answer ${path}. Start the Spring Boot backend on port 8081, then hard-refresh the dashboard.`
+      );
+    }
+    throw new Error(error?.message ?? error?.detail ?? `Request failed with status ${response.status}`);
   }
 
   return response.json() as Promise<T>;
@@ -168,6 +187,10 @@ export const api = {
     }),
   rollbackRebalance: (executionId: string) =>
     request<RebalanceExecutionResult>(`/api/rebalance/executions/${executionId}/rollback`, {
+      method: "POST"
+    }),
+  resetDemo: () =>
+    request<DemoResetResponse>("/api/admin/reset", {
       method: "POST"
     }),
   createWorkload: (payload: CreateWorkloadPayload) =>

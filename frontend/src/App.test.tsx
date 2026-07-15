@@ -73,8 +73,26 @@ describe("App", () => {
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
-        "/api/workloads/wl-demo/place?strategy=LEAST_ALLOCATED",
+        expect.stringContaining("/api/workloads/wl-demo/place?strategy=LEAST_ALLOCATED"),
         expect.objectContaining({ method: "POST" })
+      );
+    });
+  });
+
+  test("creates a workload from the action button", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findAllByText("wl-demo");
+    await user.click(screen.getByRole("button", { name: /create workload/i }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/workloads"),
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining("\"tenantId\":\"tenant-alpha\"")
+        })
       );
     });
   });
@@ -88,7 +106,7 @@ describe("App", () => {
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
-        "/api/rebalance/executions",
+        expect.stringContaining("/api/rebalance/executions"),
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({
@@ -110,7 +128,7 @@ describe("App", () => {
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
-        "/api/rebalance/executions/rbe-demo/rollback",
+        expect.stringContaining("/api/rebalance/executions/rbe-demo/rollback"),
         expect.objectContaining({ method: "POST" })
       );
     });
@@ -118,8 +136,8 @@ describe("App", () => {
 });
 
 function mockFetch(input: RequestInfo | URL, init?: RequestInit) {
-  const url = input.toString();
-  const body = responseFor(url, init?.method ?? "GET");
+  const url = new URL(input.toString(), "http://localhost");
+  const body = responseFor(`${url.pathname}${url.search}`, init?.method ?? "GET");
   return Promise.resolve({
     ok: true,
     json: () => Promise.resolve(body)
@@ -235,6 +253,19 @@ function responseFor(url: string, method: string) {
       state: "RUNNING",
       status: "ROLLED_BACK",
       message: "Rolled back workload wl-demo from cell-use1-b to cell-use1-a"
+    };
+  }
+  if (url === "/api/workloads" && method === "POST") {
+    return {
+      id: "wl-created",
+      tenantId: "tenant-alpha",
+      region: "us-east",
+      tier: "STANDARD",
+      demand: { cpuCores: 2, memoryGb: 4, storageGb: 50, iops: 1000 },
+      state: "REQUESTED",
+      assignedCellId: null,
+      createdAt: "2026-07-15T00:00:00Z",
+      updatedAt: "2026-07-15T00:00:00Z"
     };
   }
   return {

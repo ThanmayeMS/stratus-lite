@@ -121,6 +121,7 @@ This repo expects Java 21 for backend development.
 ```
 
 By default, the backend uses an in-memory H2 database for fast local development and automated tests.
+For direct local development it listens on `http://localhost:8081` to avoid common `8080` port conflicts.
 
 ## One-Command Docker Demo
 
@@ -154,6 +155,12 @@ Run the backend:
 
 ```bash
 ./scripts/use-java-21.sh mvn -Dmaven.repo.local=.m2/repository -f backend/pom.xml spring-boot:run
+```
+
+Then verify it is serving Stratus data:
+
+```bash
+curl http://localhost:8081/api/cells
 ```
 
 Core endpoints:
@@ -203,7 +210,8 @@ Run the dashboard:
 pnpm --dir frontend dev
 ```
 
-The Vite dev server proxies `/api` to `http://localhost:8080`, so start the backend first for live data.
+In dev mode the dashboard calls `http://localhost:8081/api` directly, so start the backend first for live data.
+If you intentionally run the backend on a different port, start Vite with `VITE_STRATUS_API_BASE_URL=http://localhost:<port>/api`.
 
 Verify frontend changes:
 
