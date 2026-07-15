@@ -91,6 +91,148 @@ class StratusApiIntegrationTest {
     }
 
     @Test
+    void resetDemoClearsMutableStateAndRestoresSeedFleet() throws Exception {
+        String workloadId = createAndPlaceStandardWorkloadOnCellUse1A();
+
+        mockMvc.perform(post("/api/simulations/cell-failure")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "cellId": "cell-use1-a"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/rebalance/executions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workloadId": "%s",
+                                  "sourceCellId": "cell-use1-a",
+                                  "targetCellId": "cell-use1-b"
+                                }
+                                """.formatted(workloadId)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/admin/reset"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Demo state reset"));
+
+        mockMvc.perform(get("/api/workloads"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        mockMvc.perform(get("/api/placements"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        mockMvc.perform(get("/api/incidents"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        mockMvc.perform(get("/api/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        mockMvc.perform(get("/api/rebalance/executions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        mockMvc.perform(get("/api/cells"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(4)))
+                .andExpect(jsonPath("$[0].id").value("cell-use1-a"))
+                .andExpect(jsonPath("$[0].status").value("ACTIVE"))
+                .andExpect(jsonPath("$[0].usedCapacity.cpuCores").value(4))
+                .andExpect(jsonPath("$[1].id").value("cell-use1-b"))
+                .andExpect(jsonPath("$[1].status").value("ACTIVE"))
+                .andExpect(jsonPath("$[1].usedCapacity.cpuCores").value(18))
+                .andExpect(jsonPath("$[2].id").value("cell-use1-maint"))
+                .andExpect(jsonPath("$[2].status").value("DRAINING"))
+                .andExpect(jsonPath("$[3].id").value("cell-usw2-a"))
+                .andExpect(jsonPath("$[3].status").value("ACTIVE"));
+
+        mockMvc.perform(get("/api/insights/capacity"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.riskLevel").value("LOW"))
+                .andExpect(jsonPath("$.downCells").value(0))
+                .andExpect(jsonPath("$.totalWorkloads").value(0))
+                .andExpect(jsonPath("$.recommendedMoves").value(0));
+    }
+
+    @Test
+    void smokeScenarioRunsEndToEndFromResetState() throws Exception {
+        mockMvc.perform(post("/api/admin/reset"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/cells"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(4)));
+
+        String workloadId = createAndPlaceStandardWorkloadOnCellUse1A();
+
+        mockMvc.perform(post("/api/simulations/cell-failure")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "cellId": "cell-use1-a"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cellId").value("cell-use1-a"))
+                .andExpect(jsonPath("$.cellStatus").value("DOWN"))
+                .andExpect(jsonPath("$.affectedWorkloads").value(1));
+
+        MvcResult recommendationsResult = mockMvc.perform(get("/api/rebalance/recommendations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].workloadId").value(workloadId))
+                .andExpect(jsonPath("$[0].sourceCellId").value("cell-use1-a"))
+                .andExpect(jsonPath("$[0].targetCellId").value("cell-use1-b"))
+                .andReturn();
+
+        String targetCellId = read(recommendationsResult).get(0).get("targetCellId").asText();
+        MvcResult executeResult = mockMvc.perform(post("/api/rebalance/executions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workloadId": "%s",
+                                  "sourceCellId": "cell-use1-a",
+                                  "targetCellId": "%s"
+                                }
+                                """.formatted(workloadId, targetCellId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workloadId").value(workloadId))
+                .andExpect(jsonPath("$.state").value("RUNNING"))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andReturn();
+
+        String executionId = read(executeResult).get("executionId").asText();
+
+        mockMvc.perform(get("/api/rebalance/executions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(executionId))
+                .andExpect(jsonPath("$[0].status").value("ACTIVE"));
+
+        mockMvc.perform(get("/api/insights/capacity"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.riskLevel").value("HIGH"))
+                .andExpect(jsonPath("$.downCells").value(1))
+                .andExpect(jsonPath("$.recommendedMoves").value(0));
+
+        mockMvc.perform(get("/api/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(4)))
+                .andExpect(jsonPath("$[*].type", containsInAnyOrder(
+                        "WORKLOAD_CREATED",
+                        "PLACEMENT_CREATED",
+                        "CELL_FAILURE_SIMULATED",
+                        "REBALANCE_EXECUTED"
+                )));
+    }
+
+    @Test
     void returnsConflictWhenNoCellCanHostWorkload() throws Exception {
         MvcResult createResult = mockMvc.perform(post("/api/workloads")
                         .contentType(MediaType.APPLICATION_JSON)

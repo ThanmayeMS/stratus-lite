@@ -140,6 +140,23 @@ export function App() {
   const criticalIncidents = incidents.filter((incident) => incident.severity === "CRITICAL").length;
   const activeCells = cells.filter((cell) => cell.status === "ACTIVE").length;
   const activeWorkloads = workloads.filter((workload) => ["PLACED", "RUNNING"].includes(workload.state)).length;
+  const activeExecutions = executions.filter((execution) => execution.status === "ACTIVE");
+  const hasRecommendedMoves = recommendations.length > 0;
+  const hasRollbackCandidates = activeExecutions.length > 0;
+  const nextStepTitle = hasRecommendedMoves
+    ? `${recommendations.length} rebalance ${recommendations.length === 1 ? "move" : "moves"} ready`
+    : hasRollbackCandidates
+      ? `${activeExecutions.length} active ${activeExecutions.length === 1 ? "migration" : "migrations"}`
+      : "Fleet steady";
+  const nextStepDetail = hasRecommendedMoves
+    ? "Execute a recommended migration to move risk away from the source cell."
+    : hasRollbackCandidates
+      ? "Rollback is available for active migrations while the source cell remains healthy."
+      : "Create workload, spike a cell, or fail a cell to generate operational movement.";
+
+  function scrollToPanel(panelId: string) {
+    document.getElementById(panelId)?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  }
 
   async function mutate(action: () => Promise<unknown>, successMessage: string) {
     setIsMutating(true);
@@ -245,6 +262,32 @@ export function App() {
             <Metric icon={<Database size={20} />} label="Active workloads" value={activeWorkloads.toString()} />
             <Metric icon={<AlertTriangle size={20} />} label="Open incidents" value={incidents.length.toString()} />
             <Metric icon={<Gauge size={20} />} label="Risk score" value={capacityInsight?.riskScore.toString() ?? "0"} />
+          </section>
+
+          <section className={`workflow-cue ${hasRecommendedMoves || hasRollbackCandidates ? "needs-action" : "steady"}`}>
+            <div>
+              <p className="eyebrow">Operational next step</p>
+              <h2>{nextStepTitle}</h2>
+              <p>{nextStepDetail}</p>
+            </div>
+            <div className="workflow-cue-actions">
+              <button
+                type="button"
+                className={hasRecommendedMoves ? "primary-button" : "secondary-button"}
+                onClick={() => scrollToPanel("rebalance-panel")}
+              >
+                <MoveRight size={18} />
+                Rebalance
+              </button>
+              <button
+                type="button"
+                className={hasRollbackCandidates ? "primary-button" : "secondary-button"}
+                onClick={() => scrollToPanel("migrations-panel")}
+              >
+                <Undo2 size={18} />
+                Migrations
+              </button>
+            </div>
           </section>
 
           <section className="workspace-grid">
@@ -357,6 +400,77 @@ export function App() {
             </section>
           </section>
 
+          <section className="operations-grid">
+            <DataPanel
+              id="rebalance-panel"
+              title="Rebalance"
+              eyebrow="Recommendations"
+              className={hasRecommendedMoves ? "attention-panel" : ""}
+            >
+              <div className="stack-list">
+                {recommendations.length === 0 ? (
+                  <p className="empty-copy">No moves recommended.</p>
+                ) : recommendations.map((recommendation) => (
+                  <div key={`${recommendation.workloadId}-${recommendation.targetCellId}`} className="move-item">
+                    <span className="priority">{recommendation.priority}</span>
+                    <div>
+                      <strong>{shortId(recommendation.workloadId)}</strong>
+                      <span>{recommendation.sourceCellId} → {recommendation.targetCellId}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="mini-button"
+                      onClick={() => void mutate(
+                        () => api.executeRebalance(recommendation),
+                        "Rebalance migration executed"
+                      )}
+                      disabled={isMutating}
+                    >
+                      <MoveRight size={15} />
+                      Execute
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </DataPanel>
+
+            <DataPanel
+              id="migrations-panel"
+              title="Migrations"
+              eyebrow="History"
+              className={hasRollbackCandidates ? "attention-panel" : ""}
+            >
+              <div className="stack-list">
+                {executions.length === 0 ? (
+                  <p className="empty-copy">No rebalance executions yet.</p>
+                ) : executions.map((execution) => (
+                  <div key={execution.id} className="execution-item">
+                    <History size={17} />
+                    <div>
+                      <strong>{shortId(execution.workloadId)}</strong>
+                      <span>{execution.sourceCellId} → {execution.targetCellId}</span>
+                    </div>
+                    <span className={`execution-status ${execution.status.toLowerCase()}`}>
+                      {execution.status}
+                    </span>
+                    <button
+                      type="button"
+                      className="mini-button"
+                      onClick={() => void mutate(
+                        () => api.rollbackRebalance(execution.id),
+                        "Rebalance migration rolled back"
+                      )}
+                      disabled={isMutating || execution.status !== "ACTIVE"}
+                    >
+                      <Undo2 size={15} />
+                      Rollback
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </DataPanel>
+          </section>
+
           <section className="workspace-grid lower-grid">
             <DataPanel title="Workloads" eyebrow="Lifecycle">
               <div className="table-wrap">
@@ -452,65 +566,6 @@ export function App() {
                 ))}
               </div>
             </DataPanel>
-
-            <DataPanel title="Rebalance" eyebrow="Recommendations">
-              <div className="stack-list">
-                {recommendations.length === 0 ? (
-                  <p className="empty-copy">No moves recommended.</p>
-                ) : recommendations.map((recommendation) => (
-                  <div key={`${recommendation.workloadId}-${recommendation.targetCellId}`} className="move-item">
-                    <span className="priority">{recommendation.priority}</span>
-                    <div>
-                      <strong>{shortId(recommendation.workloadId)}</strong>
-                      <span>{recommendation.sourceCellId} → {recommendation.targetCellId}</span>
-                    </div>
-                    <button
-                      type="button"
-                      className="mini-button"
-                      onClick={() => void mutate(
-                        () => api.executeRebalance(recommendation),
-                        "Rebalance migration executed"
-                      )}
-                      disabled={isMutating}
-                    >
-                      <MoveRight size={15} />
-                      Execute
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </DataPanel>
-
-            <DataPanel title="Migrations" eyebrow="History">
-              <div className="stack-list">
-                {executions.length === 0 ? (
-                  <p className="empty-copy">No rebalance executions yet.</p>
-                ) : executions.map((execution) => (
-                  <div key={execution.id} className="execution-item">
-                    <History size={17} />
-                    <div>
-                      <strong>{shortId(execution.workloadId)}</strong>
-                      <span>{execution.sourceCellId} → {execution.targetCellId}</span>
-                    </div>
-                    <span className={`execution-status ${execution.status.toLowerCase()}`}>
-                      {execution.status}
-                    </span>
-                    <button
-                      type="button"
-                      className="mini-button"
-                      onClick={() => void mutate(
-                        () => api.rollbackRebalance(execution.id),
-                        "Rebalance migration rolled back"
-                      )}
-                      disabled={isMutating || execution.status !== "ACTIVE"}
-                    >
-                      <Undo2 size={15} />
-                      Rollback
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </DataPanel>
           </section>
         </>
       )}
@@ -528,9 +583,21 @@ function Metric({ icon, label, value }: { icon: ReactNode; label: string; value:
   );
 }
 
-function DataPanel({ eyebrow, title, children }: { eyebrow: string; title: string; children: ReactNode }) {
+function DataPanel({
+  eyebrow,
+  title,
+  children,
+  id,
+  className = ""
+}: {
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
+  id?: string;
+  className?: string;
+}) {
   return (
-    <section className="panel data-panel">
+    <section id={id} className={`panel data-panel ${className}`.trim()}>
       <div className="section-heading">
         <div>
           <p className="eyebrow">{eyebrow}</p>

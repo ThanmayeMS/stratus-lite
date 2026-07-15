@@ -59,6 +59,9 @@ describe("App", () => {
     expect(screen.getByText("Capacity risk")).toBeInTheDocument();
     expect(screen.getByText("LOW")).toBeInTheDocument();
     expect(screen.getByText("PLACEMENT_CREATED")).toBeInTheDocument();
+    expect(screen.getByText("1 rebalance move ready")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /rebalance/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /migrations/i })).toBeInTheDocument();
     expect(screen.getAllByText("cell-use1-a → cell-use1-b").length).toBeGreaterThan(1);
     expect(screen.getByText("ACTIVE")).toBeInTheDocument();
   });
