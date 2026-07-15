@@ -5,7 +5,9 @@ import com.stratuslite.fleet.ResourceVector;
 import com.stratuslite.workload.WorkloadRequest;
 import java.util.Comparator;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
+@Component
 public class PlacementEngine {
 
     public PlacementDecision place(
@@ -57,4 +59,3 @@ public class PlacementEngine {
         return Math.round(value * 100.0) / 100.0;
     }
 }
-

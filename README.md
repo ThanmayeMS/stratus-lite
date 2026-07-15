@@ -39,7 +39,8 @@ The 3-day target is intentionally focused:
 - Backend project scaffolded with Spring Boot.
 - Core fleet, workload, and placement domain model implemented.
 - Placement engine supports `BEST_FIT`, `LEAST_ALLOCATED`, and `BALANCED` strategies.
-- Unit tests cover placement scoring, filtering, and no-capacity failure behavior.
+- REST APIs expose seeded cells, workload creation, workload placement, and placement history.
+- Unit and integration tests cover placement scoring, filtering, API flow, and no-capacity failure behavior.
 
 ## Core Domain
 
@@ -87,6 +88,38 @@ This repo expects Java 21 for backend development.
 
 ```bash
 ./scripts/use-java-21.sh mvn -Dmaven.repo.local=.m2/repository -f backend/pom.xml test
+```
+
+## Backend API
+
+Run the backend:
+
+```bash
+./scripts/use-java-21.sh mvn -Dmaven.repo.local=.m2/repository -f backend/pom.xml spring-boot:run
+```
+
+Core endpoints:
+
+- `GET /api/cells` - list seeded cells with capacity and utilization.
+- `GET /api/workloads` - list workload requests and lifecycle state.
+- `POST /api/workloads` - create a workload request.
+- `POST /api/workloads/{workloadId}/place?strategy=BEST_FIT` - place a workload using a strategy.
+- `GET /api/placements` - list placement decisions and candidate score explanations.
+
+Example workload request:
+
+```json
+{
+  "tenantId": "tenant-alpha",
+  "region": "us-east",
+  "tier": "STANDARD",
+  "demand": {
+    "cpuCores": 2,
+    "memoryGb": 4,
+    "storageGb": 50,
+    "iops": 1000
+  }
+}
 ```
 
 ## Three-Day Build Plan
