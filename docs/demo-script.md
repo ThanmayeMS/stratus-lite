@@ -34,7 +34,9 @@ docker compose up --build
 7. Show the rebalance recommendation from the failed source cell to a healthy target cell.
 8. Execute the migration.
 9. Show the workload moving to `RUNNING`, the source/target cell capacity changes, and recommendations clearing.
-10. Show the audit timeline proving the end-to-end control-plane sequence.
+10. Show the migration history entry with `ACTIVE` status.
+11. For a load-spike demo where the source cell remains healthy, roll back the migration and show capacity moving back.
+12. Show the audit timeline proving the end-to-end control-plane sequence.
 
 ## Command-Line Smoke Test
 

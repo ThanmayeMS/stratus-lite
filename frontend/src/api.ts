@@ -4,6 +4,7 @@ export type WorkloadState = "REQUESTED" | "PLACED" | "RUNNING" | "MIGRATING" | "
 export type PlacementStrategy = "BEST_FIT" | "LEAST_ALLOCATED" | "BALANCED";
 export type IncidentSeverity = "INFO" | "WARNING" | "CRITICAL";
 export type CapacityRiskLevel = "LOW" | "ELEVATED" | "HIGH" | "CRITICAL";
+export type RebalanceExecutionStatus = "ACTIVE" | "ROLLED_BACK";
 
 export interface ResourceVector {
   cpuCores: number;
@@ -79,11 +80,23 @@ export interface RebalanceRecommendation {
 }
 
 export interface RebalanceExecutionResult {
+  executionId: string;
   workloadId: string;
   sourceCellId: string;
   targetCellId: string;
   state: WorkloadState;
+  status: RebalanceExecutionStatus;
   message: string;
+}
+
+export interface RebalanceExecutionRecord {
+  id: string;
+  workloadId: string;
+  sourceCellId: string;
+  targetCellId: string;
+  status: RebalanceExecutionStatus;
+  createdAt: string;
+  rolledBackAt: string | null;
 }
 
 export interface CapacityInsight {
@@ -143,6 +156,7 @@ export const api = {
   capacityInsight: () => request<CapacityInsight>("/api/insights/capacity"),
   events: () => request<ControlPlaneEvent[]>("/api/events?limit=20"),
   recommendations: () => request<RebalanceRecommendation[]>("/api/rebalance/recommendations"),
+  executions: () => request<RebalanceExecutionRecord[]>("/api/rebalance/executions"),
   executeRebalance: (recommendation: RebalanceRecommendation) =>
     request<RebalanceExecutionResult>("/api/rebalance/executions", {
       method: "POST",
@@ -151,6 +165,10 @@ export const api = {
         sourceCellId: recommendation.sourceCellId,
         targetCellId: recommendation.targetCellId
       })
+    }),
+  rollbackRebalance: (executionId: string) =>
+    request<RebalanceExecutionResult>(`/api/rebalance/executions/${executionId}/rollback`, {
+      method: "POST"
     }),
   createWorkload: (payload: CreateWorkloadPayload) =>
     request<Workload>("/api/workloads", {

@@ -448,7 +448,8 @@ th {
 .candidate-row,
 .incident-item,
 .event-item,
-.move-item {
+.move-item,
+.execution-item {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -470,16 +471,22 @@ th {
   align-items: flex-start;
 }
 
+.execution-item {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+}
+
 .incident-item div,
 .event-item div,
-.move-item div {
+.move-item div,
+.execution-item div {
   display: grid;
   gap: 3px;
 }
 
 .incident-item span,
 .event-item span,
-.move-item span {
+.move-item span,
+.execution-item span {
   color: #607086;
   font-size: 0.82rem;
 }
@@ -493,6 +500,23 @@ th {
 
 .event-item.info svg {
   color: #2a7ab0;
+}
+
+.execution-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 8px;
+  background: #e8f5f0;
+  color: #176b5d !important;
+  font-size: 0.72rem !important;
+  font-weight: 850;
+}
+
+.execution-status.rolled_back {
+  background: #edf2fa;
+  color: #42536a !important;
 }
 
 .priority {

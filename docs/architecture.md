@@ -10,9 +10,13 @@ flowchart LR
   API --> Placement["Placement Engine"]
   API --> Lifecycle["Lifecycle Module"]
   API --> Incidents["Incident Module"]
+  API --> Rebalance["Rebalance Module"]
+  API --> Insights["Capacity Insights"]
   Placement --> DB[("PostgreSQL")]
   Lifecycle --> DB
   Incidents --> DB
+  Rebalance --> DB
+  Insights --> DB
 ```
 
 ## Backend Modules
@@ -21,7 +25,7 @@ flowchart LR
 - `workloads`: tenants, workload requests, lifecycle state
 - `placement`: filter, scoring, bind, placement explanations
 - `incidents`: overload/failure simulation and incident records
-- `rebalance`: migration recommendations
+- `rebalance`: migration recommendations, execution history, and rollback
 - `audit`: persisted control-plane event timeline
 - `insights`: aggregate fleet risk and capacity posture
 
@@ -37,7 +41,7 @@ After the MVP is complete, Stratus Lite can evolve toward the full Stratus plan:
 
 - Split modules into services.
 - Add Kafka for lifecycle events.
-- Add Redis locks/cache.
+- Add Redis locks/cache for multi-instance coordination.
 - Add OpenTelemetry, Prometheus, and Grafana.
 - Add Kubernetes manifests.
 - Add ILP optimization for batch placement.

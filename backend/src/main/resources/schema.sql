@@ -73,3 +73,16 @@ CREATE TABLE IF NOT EXISTS control_plane_events (
 
 CREATE INDEX IF NOT EXISTS idx_control_plane_events_created_at
     ON control_plane_events (created_at DESC);
+
+CREATE TABLE IF NOT EXISTS rebalance_executions (
+    id VARCHAR(80) PRIMARY KEY,
+    workload_id VARCHAR(80) NOT NULL,
+    source_cell_id VARCHAR(80) NOT NULL,
+    target_cell_id VARCHAR(80) NOT NULL,
+    status VARCHAR(40) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    rolled_back_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_rebalance_executions_created_at
+    ON rebalance_executions (created_at DESC);

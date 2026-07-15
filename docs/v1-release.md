@@ -10,6 +10,7 @@
 - Workload lifecycle: request, place, degrade, restore, and run.
 - Incident simulation for load spikes and cell failures.
 - Rebalance recommendations and executable migrations.
+- Persisted rebalance execution history with rollback for active migrations.
 - Capacity risk insight endpoint and dashboard panel.
 - Persisted audit timeline.
 - Backend and frontend automated tests.
@@ -29,6 +30,5 @@
 - Add authenticated tenants and role-based operations.
 - Add Prometheus metrics and Grafana dashboard.
 - Add OpenTelemetry traces around placement and migration flows.
-- Add migration history and rollback commands.
 - Add batch placement and bin-packing comparisons.
 - Add Kubernetes manifests for local kind/minikube deployment.

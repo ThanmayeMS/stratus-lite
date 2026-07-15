@@ -5,11 +5,13 @@ import {
   Gauge,
   CheckCircle2,
   Database,
+  History,
   Loader2,
   MoveRight,
   RefreshCw,
   Server,
   ShieldAlert,
+  Undo2,
   Zap
 } from "lucide-react";
 import {
@@ -21,6 +23,7 @@ import {
   Incident,
   Placement,
   PlacementStrategy,
+  RebalanceExecutionRecord,
   RebalanceRecommendation,
   ServiceTier,
   Workload
@@ -46,6 +49,7 @@ export function App() {
   const [capacityInsight, setCapacityInsight] = useState<CapacityInsight | null>(null);
   const [events, setEvents] = useState<ControlPlaneEvent[]>([]);
   const [recommendations, setRecommendations] = useState<RebalanceRecommendation[]>([]);
+  const [executions, setExecutions] = useState<RebalanceExecutionRecord[]>([]);
   const [form, setForm] = useState<CreateWorkloadPayload>(defaultWorkload);
   const [strategy, setStrategy] = useState<PlacementStrategy>("LEAST_ALLOCATED");
   const [selectedWorkloadId, setSelectedWorkloadId] = useState("");
@@ -66,7 +70,8 @@ export function App() {
         nextIncidents,
         nextCapacityInsight,
         nextEvents,
-        nextRecommendations
+        nextRecommendations,
+        nextExecutions
       ] = await Promise.all([
         api.cells(),
         api.workloads(),
@@ -74,7 +79,8 @@ export function App() {
         api.incidents(),
         api.capacityInsight(),
         api.events(),
-        api.recommendations()
+        api.recommendations(),
+        api.executions()
       ]);
 
       setCells(nextCells);
@@ -84,6 +90,7 @@ export function App() {
       setCapacityInsight(nextCapacityInsight);
       setEvents(nextEvents);
       setRecommendations(nextRecommendations);
+      setExecutions(nextExecutions);
       if (!selectedCellId && nextCells.length > 0) {
         setSelectedCellId(nextCells[0].id);
       }
@@ -398,6 +405,36 @@ export function App() {
                     >
                       <MoveRight size={15} />
                       Execute
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </DataPanel>
+
+            <DataPanel title="Migrations" eyebrow="History">
+              <div className="stack-list">
+                {executions.length === 0 ? (
+                  <p className="empty-copy">No rebalance executions yet.</p>
+                ) : executions.map((execution) => (
+                  <div key={execution.id} className="execution-item">
+                    <History size={17} />
+                    <div>
+                      <strong>{shortId(execution.workloadId)}</strong>
+                      <span>{execution.sourceCellId} → {execution.targetCellId}</span>
+                    </div>
+                    <span className={`execution-status ${execution.status.toLowerCase()}`}>
+                      {execution.status}
+                    </span>
+                    <button
+                      className="mini-button"
+                      onClick={() => void mutate(
+                        () => api.rollbackRebalance(execution.id),
+                        "Rebalance migration rolled back"
+                      )}
+                      disabled={isMutating || execution.status !== "ACTIVE"}
+                    >
+                      <Undo2 size={15} />
+                      Rollback
                     </button>
                   </div>
                 ))}

@@ -112,12 +112,35 @@ target_cell_id="$(json_get "$tmp_dir/recommendation.json" "targetCellId")"
 echo "Recommended target: $target_cell_id"
 
 request POST "/api/rebalance/executions" "$(cat "$tmp_dir/recommendation.json")" "$tmp_dir/execution.json"
+execution_id="$(json_get "$tmp_dir/execution.json" "executionId")"
 execution_state="$(json_get "$tmp_dir/execution.json" "state")"
 if [[ "$execution_state" != "RUNNING" ]]; then
   echo "Expected execution state RUNNING, got $execution_state" >&2
   exit 1
 fi
+execution_status="$(json_get "$tmp_dir/execution.json" "status")"
+if [[ "$execution_status" != "ACTIVE" ]]; then
+  echo "Expected execution status ACTIVE, got $execution_status" >&2
+  exit 1
+fi
 echo "Executed migration: $workload_id -> $target_cell_id"
+
+request GET "/api/rebalance/executions" "" "$tmp_dir/executions.json"
+python3 - "$tmp_dir/executions.json" "$execution_id" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    executions = json.load(handle)
+
+execution_id = sys.argv[2]
+match = next((item for item in executions if item["id"] == execution_id), None)
+if match is None:
+    raise SystemExit(f"No execution history record found for {execution_id}")
+if match["status"] != "ACTIVE":
+    raise SystemExit(f"Expected history status ACTIVE, got {match['status']}")
+PY
+echo "Execution history recorded: $execution_id"
 
 request GET "/api/insights/capacity" "" "$tmp_dir/insight.json"
 risk_level="$(json_get "$tmp_dir/insight.json" "riskLevel")"

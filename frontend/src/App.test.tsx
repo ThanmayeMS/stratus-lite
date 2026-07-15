@@ -59,7 +59,8 @@ describe("App", () => {
     expect(screen.getByText("Capacity risk")).toBeInTheDocument();
     expect(screen.getByText("LOW")).toBeInTheDocument();
     expect(screen.getByText("PLACEMENT_CREATED")).toBeInTheDocument();
-    expect(screen.getByText("cell-use1-a → cell-use1-b")).toBeInTheDocument();
+    expect(screen.getAllByText("cell-use1-a → cell-use1-b").length).toBeGreaterThan(1);
+    expect(screen.getByText("ACTIVE")).toBeInTheDocument();
   });
 
   test("places the selected workload", async () => {
@@ -82,7 +83,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await screen.findByText("cell-use1-a → cell-use1-b");
+    await screen.findAllByText("cell-use1-a → cell-use1-b");
     await user.click(screen.getByRole("button", { name: /execute/i }));
 
     await waitFor(() => {
@@ -99,18 +100,33 @@ describe("App", () => {
       );
     });
   });
+
+  test("rolls back an active rebalance execution", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findByText("ACTIVE");
+    await user.click(screen.getByRole("button", { name: /rollback/i }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/rebalance/executions/rbe-demo/rollback",
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+  });
 });
 
-function mockFetch(input: RequestInfo | URL) {
+function mockFetch(input: RequestInfo | URL, init?: RequestInit) {
   const url = input.toString();
-  const body = responseFor(url);
+  const body = responseFor(url, init?.method ?? "GET");
   return Promise.resolve({
     ok: true,
     json: () => Promise.resolve(body)
   } as Response);
 }
 
-function responseFor(url: string) {
+function responseFor(url: string, method: string) {
   if (url === "/api/cells") {
     return cells;
   }
@@ -186,13 +202,39 @@ function responseFor(url: string) {
       }
     ];
   }
-  if (url === "/api/rebalance/executions") {
+  if (url === "/api/rebalance/executions" && method === "GET") {
+    return [
+      {
+        id: "rbe-demo",
+        workloadId: "wl-demo",
+        sourceCellId: "cell-use1-a",
+        targetCellId: "cell-use1-b",
+        status: "ACTIVE",
+        createdAt: "2026-07-15T00:00:00Z",
+        rolledBackAt: null
+      }
+    ];
+  }
+  if (url === "/api/rebalance/executions" && method === "POST") {
     return {
+      executionId: "rbe-demo",
       workloadId: "wl-demo",
       sourceCellId: "cell-use1-a",
       targetCellId: "cell-use1-b",
       state: "RUNNING",
+      status: "ACTIVE",
       message: "Migrated workload wl-demo from cell-use1-a to cell-use1-b"
+    };
+  }
+  if (url === "/api/rebalance/executions/rbe-demo/rollback") {
+    return {
+      executionId: "rbe-demo",
+      workloadId: "wl-demo",
+      sourceCellId: "cell-use1-b",
+      targetCellId: "cell-use1-a",
+      state: "RUNNING",
+      status: "ROLLED_BACK",
+      message: "Rolled back workload wl-demo from cell-use1-b to cell-use1-a"
     };
   }
   return {

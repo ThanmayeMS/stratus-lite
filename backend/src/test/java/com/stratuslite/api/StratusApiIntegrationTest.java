@@ -228,7 +228,9 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$.workloadId").value(workloadId))
                 .andExpect(jsonPath("$.sourceCellId").value("cell-use1-a"))
                 .andExpect(jsonPath("$.targetCellId").value("cell-use1-b"))
-                .andExpect(jsonPath("$.state").value("RUNNING"));
+                .andExpect(jsonPath("$.state").value("RUNNING"))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.executionId", notNullValue()));
 
         mockMvc.perform(get("/api/workloads"))
                 .andExpect(status().isOk())
@@ -247,6 +249,14 @@ class StratusApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
 
+        mockMvc.perform(get("/api/rebalance/executions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].workloadId").value(workloadId))
+                .andExpect(jsonPath("$[0].sourceCellId").value("cell-use1-a"))
+                .andExpect(jsonPath("$[0].targetCellId").value("cell-use1-b"))
+                .andExpect(jsonPath("$[0].status").value("ACTIVE"));
+
         mockMvc.perform(get("/api/events"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(4)))
@@ -255,6 +265,81 @@ class StratusApiIntegrationTest {
                         "PLACEMENT_CREATED",
                         "CELL_FAILURE_SIMULATED",
                         "REBALANCE_EXECUTED"
+                )));
+    }
+
+    @Test
+    void rollsBackRebalanceExecutionWhenSourceCellIsHealthy() throws Exception {
+        String workloadId = createAndPlaceStandardWorkloadOnCellUse1A();
+
+        mockMvc.perform(post("/api/simulations/load-spike")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "cellId": "cell-use1-a",
+                                  "load": {
+                                    "cpuCores": 8,
+                                    "memoryGb": 32,
+                                    "storageGb": 600,
+                                    "iops": 12000
+                                  }
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        MvcResult executeResult = mockMvc.perform(post("/api/rebalance/executions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workloadId": "%s",
+                                  "sourceCellId": "cell-use1-a",
+                                  "targetCellId": "cell-use1-b"
+                                }
+                                """.formatted(workloadId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andReturn();
+
+        String executionId = read(executeResult).get("executionId").asText();
+
+        mockMvc.perform(post("/api/rebalance/executions/{executionId}/rollback", executionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.executionId").value(executionId))
+                .andExpect(jsonPath("$.workloadId").value(workloadId))
+                .andExpect(jsonPath("$.sourceCellId").value("cell-use1-b"))
+                .andExpect(jsonPath("$.targetCellId").value("cell-use1-a"))
+                .andExpect(jsonPath("$.state").value("RUNNING"))
+                .andExpect(jsonPath("$.status").value("ROLLED_BACK"));
+
+        mockMvc.perform(get("/api/workloads"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(workloadId))
+                .andExpect(jsonPath("$[0].state").value("RUNNING"))
+                .andExpect(jsonPath("$[0].assignedCellId").value("cell-use1-a"));
+
+        mockMvc.perform(get("/api/cells"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("cell-use1-a"))
+                .andExpect(jsonPath("$[0].usedCapacity.cpuCores").value(14))
+                .andExpect(jsonPath("$[1].id").value("cell-use1-b"))
+                .andExpect(jsonPath("$[1].usedCapacity.cpuCores").value(18));
+
+        mockMvc.perform(get("/api/rebalance/executions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(executionId))
+                .andExpect(jsonPath("$[0].status").value("ROLLED_BACK"))
+                .andExpect(jsonPath("$[0].rolledBackAt", notNullValue()));
+
+        mockMvc.perform(get("/api/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(5)))
+                .andExpect(jsonPath("$[*].type", containsInAnyOrder(
+                        "WORKLOAD_CREATED",
+                        "PLACEMENT_CREATED",
+                        "LOAD_SPIKE_SIMULATED",
+                        "REBALANCE_EXECUTED",
+                        "REBALANCE_ROLLED_BACK"
                 )));
     }
 

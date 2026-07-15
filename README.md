@@ -43,6 +43,7 @@ The first version is intentionally focused:
 - React dashboard shows fleet health, workload creation, placement outcomes, incidents, and rebalance recommendations.
 - JDBC repositories persist fleet, workload, placement, and incident state.
 - Audit events capture workload, placement, simulation, and rebalance actions for a control-plane timeline.
+- Rebalance execution history records migration status and supports capacity-safe rollback.
 - Capacity insights compute a live risk score from utilization, incidents, degraded workloads, and recommended moves.
 - Docker Compose runs PostgreSQL, the Spring Boot backend, and the production dashboard together.
 - Frontend and backend test suites run locally and in GitHub Actions.
@@ -169,6 +170,8 @@ Core endpoints:
 - `GET /api/events?limit=25` - list recent control-plane audit events.
 - `GET /api/rebalance/recommendations` - recommend workload moves away from overloaded or down cells.
 - `POST /api/rebalance/executions` - execute a recommended migration and move capacity between cells.
+- `GET /api/rebalance/executions` - list migration execution history and rollback status.
+- `POST /api/rebalance/executions/{executionId}/rollback` - roll back an active migration if the source cell is healthy and has capacity.
 
 Example workload request:
 
@@ -226,13 +229,14 @@ pnpm --dir frontend build
 - Add lifecycle state transitions.
 - Add overload/failure simulation.
 - Add rebalance recommendation logic.
+- Add migration history and rollback for executed recommendations.
 
 ### Day 3: Polish And Proof
 
 - Add integration tests.
 - Add Docker Compose.
 - Add GitHub Actions CI.
-- Add screenshots and a demo script.
+- Add demo script and smoke test.
 - Write final resume bullets and architecture notes.
 
 ## Demo Script
@@ -244,6 +248,7 @@ Use the dedicated V1 walkthrough in [docs/demo-script.md](docs/demo-script.md).
 - Built a local cloud workload placement control plane using Java, Spring Boot, React, PostgreSQL, and Docker Compose.
 - Implemented a capacity-aware `Filter -> Score -> Bind` scheduler with explainable scoring strategies across CPU, memory, storage, and IOPS.
 - Added workload lifecycle orchestration, overload simulation, incident detection, and executable rebalance migrations.
+- Added persisted migration history and rollback controls for rebalance executions.
 - Persisted an audit timeline for workload, placement, simulation, and migration actions.
 - Built a capacity insight endpoint that scores fleet risk from utilization, incidents, degraded workloads, and migration pressure.
 - Wrote automated tests for placement correctness, API behavior, and failure scenarios, with GitHub Actions CI.

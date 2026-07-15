@@ -26,6 +26,7 @@ Coverage includes:
 - Load spike incidents and rebalance recommendations.
 - Cell failure degradation and restore recommendation.
 - Executable rebalance migration.
+- Migration history and capacity-safe rollback.
 - Audit events.
 - Capacity risk insight.
 
@@ -41,6 +42,7 @@ Coverage includes:
 - Dashboard rendering.
 - Placement action.
 - Rebalance execution action.
+- Rebalance rollback action.
 
 ## Smoke Test
 
