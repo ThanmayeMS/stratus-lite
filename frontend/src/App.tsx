@@ -617,8 +617,8 @@ export function App() {
                         <strong>{shortId(recommendation.workloadId)}</strong>
                         <span>{recommendation.sourceCellId} → {recommendation.targetCellId}</span>
                         <p>{recommendation.reason}</p>
-                        <p>{recommendation.explanation}</p>
-                        <p><strong>Next:</strong> {recommendation.operatorAction}</p>
+                        <p>{recommendation.explanation || "The source cell is risky and the target cell has enough safe capacity."}</p>
+                        <p><strong>Next:</strong> {recommendation.operatorAction || "Execute the move, then verify migration history."}</p>
                       </div>
                       <button
                         type="button"
@@ -721,18 +721,21 @@ export function App() {
                       The scheduler scored every possible cell, then picked the highest-scoring safe option.
                     </p>
                     <div className="candidate-list">
-                      {latestPlacement.candidates.map((candidate) => (
-                        <div key={candidate.cellId} className="candidate-row">
-                          <span>{candidate.cellId}</span>
-                          <span className={`eligibility-pill ${candidate.eligible ? "eligible" : "rejected"}`}>
-                            {candidate.eligible ? "eligible" : "rejected"}
-                          </span>
-                          <strong>{candidate.eligible ? candidate.score.toFixed(2) : "blocked"}</strong>
-                          <small>Projected util {candidate.projectedUtilizationPercent.toFixed(1)}%</small>
-                          <p>{candidate.policySummary}</p>
-                          <p>{candidate.reason}</p>
-                        </div>
-                      ))}
+                      {latestPlacement.candidates.map((candidate) => {
+                        const isEligible = candidate.eligible ?? true;
+                        return (
+                          <div key={candidate.cellId} className="candidate-row">
+                            <span>{candidate.cellId}</span>
+                            <span className={`eligibility-pill ${isEligible ? "eligible" : "rejected"}`}>
+                              {isEligible ? "eligible" : "rejected"}
+                            </span>
+                            <strong>{formatCandidateScore(candidate.score, isEligible)}</strong>
+                            <small>Projected util {formatPercent(candidate.projectedUtilizationPercent)}</small>
+                            <p>{candidate.policySummary || "Recorded before detailed policy summaries were added."}</p>
+                            <p>{candidate.reason || "No candidate reason recorded."}</p>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : (
@@ -765,10 +768,14 @@ export function App() {
                       <span>{capacityInsight.riskLevel}</span>
                     </div>
                     <p>{capacityInsight.summary}</p>
-                    <p className="plain-explain">{capacityInsight.explanation}</p>
-                    <p className="plain-explain"><strong>Next:</strong> {capacityInsight.operatorAction}</p>
+                    <p className="plain-explain">
+                      {capacityInsight.explanation || "Risk is based on utilization, cell health, incidents, and recommended moves."}
+                    </p>
+                    <p className="plain-explain">
+                      <strong>Next:</strong> {capacityInsight.operatorAction || "Review fleet state before placing more workloads."}
+                    </p>
                     <div className="risk-facts">
-                      <span>Max util <strong>{capacityInsight.maxUtilizationPercent.toFixed(1)}%</strong></span>
+                      <span>Max util <strong>{formatPercent(capacityInsight.maxUtilizationPercent)}</strong></span>
                       <span>Overloaded <strong>{capacityInsight.overloadedCells}</strong></span>
                       <span>Down <strong>{capacityInsight.downCells}</strong></span>
                       <span>Moves <strong>{capacityInsight.recommendedMoves}</strong></span>
@@ -894,6 +901,17 @@ function migrationStory(execution: RebalanceExecutionRecord) {
     return "This move was undone, so the workload was sent back to its previous cell.";
   }
   return "This workload was moved away from the source cell. Rollback is still available while the record is active.";
+}
+
+function formatCandidateScore(score: number, isEligible: boolean) {
+  if (!isEligible) {
+    return "blocked";
+  }
+  return Number.isFinite(score) ? score.toFixed(2) : "not recorded";
+}
+
+function formatPercent(value: number) {
+  return Number.isFinite(value) ? `${value.toFixed(1)}%` : "not recorded";
 }
 
 function shortId(id: string) {
