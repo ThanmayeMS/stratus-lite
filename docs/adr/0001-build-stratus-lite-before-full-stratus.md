@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-The full Project Stratus plan includes multiple microservices, Kafka, several datastores, Kubernetes, observability infrastructure, and optimization tooling. That is a strong long-term portfolio project, but it is too large for a 3-day build.
+The full Project Stratus plan includes multiple microservices, Kafka, several datastores, Kubernetes, observability infrastructure, and optimization tooling. Stratus Lite keeps the same control-plane domain while reducing infrastructure scope for local development.
 
 ## Decision
 
@@ -14,8 +14,7 @@ Build Stratus Lite first as a local-first modular monolith with a React dashboar
 
 ## Consequences
 
-- The project can be finished and demoed quickly.
-- The placement engine remains deep enough for interviews.
+- The project can be run and verified locally.
+- The placement engine remains deep enough to show meaningful scheduling behavior.
 - The architecture can still evolve toward microservices later.
-- The README can clearly separate completed MVP scope from future roadmap.
-
+- The README can clearly separate completed scope from future roadmap.

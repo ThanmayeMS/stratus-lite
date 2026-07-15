@@ -29,6 +29,8 @@ Coverage includes:
 - Migration history and capacity-safe rollback.
 - Audit events.
 - Capacity risk insight.
+- Monitor-only reconciler status and manual sweep.
+- Operational metrics for placement, migration, incident, and audit activity.
 
 ## Frontend
 
@@ -43,6 +45,7 @@ Coverage includes:
 - Placement action.
 - Rebalance execution action.
 - Rebalance rollback action.
+- Reconciler check action.
 
 ## Smoke Test
 
@@ -52,7 +55,7 @@ Run this after the backend is live:
 ./scripts/smoke-test.sh
 ```
 
-The smoke test targets `http://localhost:8081` by default. It resets demo state, creates and places a workload, simulates a source-cell failure, executes the recommended migration, checks capacity insight, and verifies audit events.
+The smoke test targets `http://localhost:8081` by default. It resets demo state, creates and places a workload, simulates a source-cell failure, verifies the reconciler reports `ACTION_REQUIRED`, executes the recommended migration, checks capacity insight and operational metrics, and verifies audit events.
 
 For repeatability against Docker Compose:
 

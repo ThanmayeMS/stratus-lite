@@ -1,10 +1,14 @@
 # Stratus Lite
 
+[![CI](https://github.com/ThanmayeMS/stratus-lite/actions/workflows/ci.yml/badge.svg)](https://github.com/ThanmayeMS/stratus-lite/actions/workflows/ci.yml)
+
 Stratus Lite is a local-first cloud workload placement control plane.
 
 It simulates how a cloud platform accepts workload requests, chooses the best cell for each workload, reserves capacity, tracks lifecycle state, detects overload, recommends rebalancing actions, and explains each operational decision.
 
 The project runs entirely on a laptop with free local tooling. No external cloud account or paid API is required.
+
+![Stratus Lite dashboard](docs/assets/dashboard.jpg)
 
 ## Technical Highlights
 
@@ -20,9 +24,9 @@ The project runs entirely on a laptop with free local tooling. No external cloud
 - Test automation and CI
 - Docker Compose based local development
 
-## V1 Scope
+## Project Scope
 
-The first version is intentionally focused:
+The project is intentionally focused:
 
 - One Spring Boot backend with clean internal modules
 - One React + TypeScript dashboard
@@ -40,7 +44,7 @@ The first version is intentionally focused:
 
 ## Current Status
 
-- V1 backend implemented with Spring Boot.
+- Backend implemented with Spring Boot.
 - Core fleet, workload, placement, incident, audit, and insight domain model implemented.
 - Placement engine supports `BEST_FIT`, `LEAST_ALLOCATED`, and `BALANCED` strategies.
 - REST APIs expose seeded cells, workload creation, workload placement, and placement history.
@@ -55,7 +59,7 @@ The first version is intentionally focused:
 - Frontend and backend test suites run locally and in GitHub Actions.
 - Unit and integration tests cover placement scoring, filtering, API flow, and no-capacity failure behavior.
 
-## V1 Proof Commands
+## Verification
 
 Run the full automated verification suite:
 
@@ -69,12 +73,12 @@ Run the end-to-end smoke test after the backend is live:
 make smoke
 ```
 
-Project proof docs:
+Project docs:
 
 - [Architecture notes](docs/architecture.md)
 - [Demo script](docs/demo-script.md)
 - [Testing guide](docs/testing.md)
-- [V1 release notes](docs/v1-release.md)
+- [Release notes](docs/release-notes.md)
 
 ## Core Domain
 
@@ -248,7 +252,7 @@ pnpm --dir frontend build
 
 ## Demo Script
 
-Use the dedicated V1 walkthrough in [docs/demo-script.md](docs/demo-script.md).
+Use the dedicated walkthrough in [docs/demo-script.md](docs/demo-script.md).
 
 ## Design Notes
 

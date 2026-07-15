@@ -2,7 +2,7 @@
 
 ## Current Target
 
-Stratus Lite starts as a modular monolith plus a React dashboard. This keeps the 3-day project shippable while preserving clear service boundaries inside the backend.
+Stratus Lite is a modular monolith plus a React dashboard. This keeps local development simple while preserving clear service boundaries inside the backend.
 
 ```mermaid
 flowchart LR
@@ -59,11 +59,11 @@ The metrics endpoint summarizes the operational surface area:
 
 ## Local-First Design
 
-Everything should run locally through Docker Compose. Cloud deployment is a future roadmap item, not part of the 3-day MVP.
+Everything runs locally through Docker Compose. Cloud deployment is a future roadmap item, not part of the current local-first scope.
 
 ## Future Roadmap
 
-After the MVP is complete, Stratus Lite can evolve toward the full Stratus plan:
+Stratus Lite can evolve toward a larger distributed control-plane architecture:
 
 - Split modules into services.
 - Add Kafka for lifecycle events.

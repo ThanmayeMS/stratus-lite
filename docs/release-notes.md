@@ -1,4 +1,4 @@
-# V1 Release Notes
+# Release Notes
 
 ## Completed Scope
 
@@ -12,20 +12,24 @@
 - Rebalance recommendations and executable migrations.
 - Persisted rebalance execution history with rollback for active migrations.
 - Capacity risk insight endpoint and dashboard panel.
+- Monitor-only reconciler status and manual sweep endpoint.
+- Operational metrics endpoint and dashboard panel.
 - Persisted audit timeline.
 - Backend and frontend automated tests.
 - GitHub Actions CI.
 - Demo script and smoke-test script.
+- Public README, dashboard screenshot, architecture notes, and testing guide.
 
-## Known V1 Limits
+## Known Limits
 
 - No authentication or multi-user authorization.
 - No Kubernetes deployment manifests.
 - No Prometheus/Grafana stack yet.
-- No distributed locking because V1 runs as a modular monolith.
+- Reconciler is monitor-only; it does not auto-execute migrations.
+- No distributed locking because the app runs as a modular monolith.
 - No real cloud provider integration; all fleet state is simulated locally.
 
-## Suggested V2 Roadmap
+## Suggested Roadmap
 
 - Add authenticated tenants and role-based operations.
 - Add Prometheus metrics and Grafana dashboard.

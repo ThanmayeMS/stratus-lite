@@ -1,6 +1,6 @@
 # Demo Script
 
-This is the V1 demo path. It shows the project as a local cloud control plane rather than a CRUD app.
+This demo path shows the project as a local cloud control plane rather than a CRUD app.
 
 ## Setup
 

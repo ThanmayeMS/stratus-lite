@@ -273,11 +273,15 @@ h2 {
   font-size: 1.08rem;
 }
 
-.quickstart-intro,
-.guided-drill {
+.quickstart-intro {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
+  gap: 14px;
+}
+
+.guided-drill {
+  display: grid;
   gap: 14px;
 }
 
@@ -337,7 +341,7 @@ h2 {
 
 .drill-steps {
   display: grid;
-  grid-template-columns: repeat(5, minmax(118px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
   margin: 0;
   padding: 0;
