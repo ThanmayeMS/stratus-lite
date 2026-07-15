@@ -2,27 +2,29 @@ package com.stratuslite.incident;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class IncidentService {
 
-    private final Map<String, Incident> incidents = new LinkedHashMap<>();
+    private final IncidentRepository incidentRepository;
     private final Clock clock;
 
-    public IncidentService() {
-        this(Clock.systemUTC());
+    @Autowired
+    public IncidentService(IncidentRepository incidentRepository) {
+        this(incidentRepository, Clock.systemUTC());
     }
 
-    IncidentService(Clock clock) {
+    IncidentService(IncidentRepository incidentRepository, Clock clock) {
+        this.incidentRepository = incidentRepository;
         this.clock = clock;
     }
 
+    @Transactional
     public synchronized Incident record(
             IncidentType type,
             IncidentSeverity severity,
@@ -37,14 +39,12 @@ public class IncidentService {
                 message,
                 Instant.now(clock)
         );
-        incidents.put(incident.id(), incident);
+        incidentRepository.save(incident);
         return incident;
     }
 
+    @Transactional(readOnly = true)
     public synchronized List<Incident> listIncidents() {
-        return incidents.values().stream()
-                .sorted(Comparator.comparing(Incident::createdAt))
-                .toList();
+        return incidentRepository.findAll();
     }
 }
-

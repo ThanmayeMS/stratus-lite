@@ -1,64 +1,74 @@
 package com.stratuslite.fleet;
 
 import com.stratuslite.common.ResourceNotFoundException;
+import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FleetService {
 
-    private final Map<String, Cell> cells = new LinkedHashMap<>();
+    private final CellRepository cellRepository;
 
-    public FleetService() {
+    public FleetService(CellRepository cellRepository) {
+        this.cellRepository = cellRepository;
+    }
+
+    @PostConstruct
+    void seedFleetIfEmpty() {
+        if (cellRepository.count() > 0) {
+            return;
+        }
         seedFleet();
     }
 
+    @Transactional(readOnly = true)
     public synchronized List<Cell> listCells() {
-        return cells.values().stream()
-                .sorted(Comparator.comparing(Cell::id))
-                .toList();
+        return cellRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public synchronized Cell getCell(String cellId) {
-        Cell cell = cells.get(cellId);
-        if (cell == null) {
-            throw new ResourceNotFoundException("Cell %s was not found".formatted(cellId));
-        }
-        return cell;
+        return cellRepository.findById(cellId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Cell %s was not found".formatted(cellId)
+                ));
     }
 
+    @Transactional
     public synchronized Cell reserveCapacity(String cellId, ResourceVector demand) {
         Cell reserved = getCell(cellId).reserve(demand);
-        cells.put(cellId, reserved);
+        cellRepository.save(reserved);
         return reserved;
     }
 
+    @Transactional
     public synchronized Cell applyLoadSpike(String cellId, ResourceVector load) {
         Cell spiked = getCell(cellId).applyLoad(load);
-        cells.put(cellId, spiked);
+        cellRepository.save(spiked);
         return spiked;
     }
 
+    @Transactional
     public synchronized Cell markDown(String cellId) {
         Cell down = getCell(cellId).withStatus(CellStatus.DOWN);
-        cells.put(cellId, down);
+        cellRepository.save(down);
         return down;
     }
 
+    @Transactional(readOnly = true)
     public synchronized List<Cell> overloadedCells(double utilizationThreshold) {
-        return cells.values().stream()
+        return cellRepository.findAll().stream()
                 .filter(cell -> cell.status() == CellStatus.ACTIVE)
                 .filter(cell -> cell.isOverloaded(utilizationThreshold))
-                .sorted(Comparator.comparing(Cell::id))
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public synchronized List<Cell> activeCellsSnapshot() {
-        return new ArrayList<>(cells.values());
+        return new ArrayList<>(cellRepository.findAll());
     }
 
     private void seedFleet() {
@@ -97,6 +107,6 @@ public class FleetService {
     }
 
     private void add(Cell cell) {
-        cells.put(cell.id(), cell);
+        cellRepository.save(cell);
     }
 }

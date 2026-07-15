@@ -41,6 +41,8 @@ The 3-day target is intentionally focused:
 - Placement engine supports `BEST_FIT`, `LEAST_ALLOCATED`, and `BALANCED` strategies.
 - REST APIs expose seeded cells, workload creation, workload placement, and placement history.
 - React dashboard shows fleet health, workload creation, placement outcomes, incidents, and rebalance recommendations.
+- JDBC repositories persist fleet, workload, placement, and incident state.
+- Docker Compose runs PostgreSQL, the Spring Boot backend, and the production dashboard together.
 - Frontend and backend test suites run locally and in GitHub Actions.
 - Unit and integration tests cover placement scoring, filtering, API flow, and no-capacity failure behavior.
 
@@ -75,10 +77,13 @@ Each placement stores an explanation so the dashboard can show why a cell was ch
 
 - Java 21
 - Spring Boot
+- PostgreSQL
+- H2 for lightweight local/test runs
 - React 19
 - TypeScript
 - Vite
 - pnpm
+- Docker Compose
 - JUnit 5
 - React Testing Library
 - GitHub Actions
@@ -89,6 +94,34 @@ This repo expects Java 21 for backend development.
 
 ```bash
 ./scripts/use-java-21.sh mvn -Dmaven.repo.local=.m2/repository -f backend/pom.xml test
+```
+
+By default, the backend uses an in-memory H2 database for fast local development and automated tests.
+
+## One-Command Docker Demo
+
+Run the full local stack with persistent PostgreSQL:
+
+```bash
+docker compose up --build
+```
+
+Then open:
+
+- Dashboard: `http://localhost:5173`
+- Backend API: `http://localhost:8080/api/cells`
+- PostgreSQL: `localhost:5432`, database `stratus_lite`, user `stratus`, password `stratus`
+
+Stop the stack:
+
+```bash
+docker compose down
+```
+
+Reset persisted demo data:
+
+```bash
+docker compose down -v
 ```
 
 ## Backend API

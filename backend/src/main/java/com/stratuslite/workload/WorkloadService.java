@@ -3,67 +3,68 @@ package com.stratuslite.workload;
 import com.stratuslite.common.ResourceNotFoundException;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class WorkloadService {
 
-    private final Map<String, Workload> workloads = new LinkedHashMap<>();
+    private final WorkloadRepository workloadRepository;
     private final Clock clock;
 
-    public WorkloadService() {
-        this(Clock.systemUTC());
+    @Autowired
+    public WorkloadService(WorkloadRepository workloadRepository) {
+        this(workloadRepository, Clock.systemUTC());
     }
 
-    WorkloadService(Clock clock) {
+    WorkloadService(WorkloadRepository workloadRepository, Clock clock) {
+        this.workloadRepository = workloadRepository;
         this.clock = clock;
     }
 
+    @Transactional
     public synchronized Workload createWorkload(CreateWorkloadCommand command) {
         String workloadId = "wl-" + UUID.randomUUID();
         Workload workload = Workload.requested(workloadId, command, Instant.now(clock));
-        workloads.put(workloadId, workload);
+        workloadRepository.save(workload);
         return workload;
     }
 
+    @Transactional(readOnly = true)
     public synchronized List<Workload> listWorkloads() {
-        return workloads.values().stream()
-                .sorted(Comparator.comparing(Workload::createdAt))
-                .toList();
+        return workloadRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public synchronized List<Workload> listWorkloadsOnCell(String cellId) {
-        return workloads.values().stream()
-                .filter(workload -> workload.isAssignedTo(cellId))
-                .sorted(Comparator.comparing(Workload::createdAt))
-                .toList();
+        return workloadRepository.findByAssignedCellId(cellId);
     }
 
+    @Transactional(readOnly = true)
     public synchronized Workload getWorkload(String workloadId) {
-        Workload workload = workloads.get(workloadId);
-        if (workload == null) {
-            throw new ResourceNotFoundException("Workload %s was not found".formatted(workloadId));
-        }
-        return workload;
+        return workloadRepository.findById(workloadId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Workload %s was not found".formatted(workloadId)
+                ));
     }
 
+    @Transactional
     public synchronized Workload markPlaced(String workloadId, String cellId) {
         Workload placed = getWorkload(workloadId).placedOn(cellId, Instant.now(clock));
-        workloads.put(workloadId, placed);
+        workloadRepository.save(placed);
         return placed;
     }
 
+    @Transactional
     public synchronized List<Workload> markAssignedWorkloadsDegraded(String cellId) {
         List<Workload> degradedWorkloads = listWorkloadsOnCell(cellId).stream()
                 .map(workload -> workload.degraded(Instant.now(clock)))
                 .toList();
 
-        degradedWorkloads.forEach(workload -> workloads.put(workload.id(), workload));
+        degradedWorkloads.forEach(workloadRepository::save);
         return degradedWorkloads;
     }
 }

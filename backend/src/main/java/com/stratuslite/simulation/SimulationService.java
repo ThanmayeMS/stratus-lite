@@ -8,6 +8,7 @@ import com.stratuslite.incident.IncidentSeverity;
 import com.stratuslite.incident.IncidentType;
 import com.stratuslite.workload.WorkloadService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SimulationService {
@@ -28,6 +29,7 @@ public class SimulationService {
         this.incidentService = incidentService;
     }
 
+    @Transactional
     public SimulationResult simulateLoadSpike(LoadSpikeCommand command) {
         Cell cell = fleetService.applyLoadSpike(command.cellId(), command.load());
         boolean overloaded = cell.isOverloaded(OVERLOAD_THRESHOLD);
@@ -49,6 +51,7 @@ public class SimulationService {
         );
     }
 
+    @Transactional
     public SimulationResult simulateCellFailure(CellFailureCommand command) {
         Cell cell = fleetService.markDown(command.cellId());
         int affectedWorkloads = workloadService.markAssignedWorkloadsDegraded(cell.id()).size();
@@ -72,4 +75,3 @@ public class SimulationService {
         return Math.round(ratio * 10_000.0) / 100.0;
     }
 }
-

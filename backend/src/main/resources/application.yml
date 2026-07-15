@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: stratus-lite
+  datasource:
+    url: jdbc:h2:mem:stratuslite;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: always
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/stratus_lite}
+    username: ${SPRING_DATASOURCE_USERNAME:stratus}
+    password: ${SPRING_DATASOURCE_PASSWORD:stratus}
+    driver-class-name: org.postgresql.Driver
