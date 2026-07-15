@@ -23,3 +23,32 @@ jobs:
 
       - name: Run backend tests
         run: mvn -Dmaven.repo.local=.m2/repository -f backend/pom.xml test
+
+  frontend:
+    name: Frontend Tests And Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        run: pnpm --dir frontend install --frozen-lockfile
+
+      - name: Run frontend tests
+        run: pnpm --dir frontend test
+
+      - name: Build frontend
+        run: pnpm --dir frontend build

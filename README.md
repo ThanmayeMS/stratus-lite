@@ -40,6 +40,8 @@ The 3-day target is intentionally focused:
 - Core fleet, workload, and placement domain model implemented.
 - Placement engine supports `BEST_FIT`, `LEAST_ALLOCATED`, and `BALANCED` strategies.
 - REST APIs expose seeded cells, workload creation, workload placement, and placement history.
+- React dashboard shows fleet health, workload creation, placement outcomes, incidents, and rebalance recommendations.
+- Frontend and backend test suites run locally and in GitHub Actions.
 - Unit and integration tests cover placement scoring, filtering, API flow, and no-capacity failure behavior.
 
 ## Core Domain
@@ -69,15 +71,14 @@ Initial scoring strategies:
 
 Each placement stores an explanation so the dashboard can show why a cell was chosen.
 
-## Planned Stack
+## Stack
 
 - Java 21
 - Spring Boot
-- PostgreSQL
-- React
+- React 19
 - TypeScript
-- Redux Toolkit or TanStack Query
-- Docker Compose
+- Vite
+- pnpm
 - JUnit 5
 - React Testing Library
 - GitHub Actions
@@ -124,6 +125,29 @@ Example workload request:
     "iops": 1000
   }
 }
+```
+
+## Frontend Dashboard
+
+Install frontend dependencies:
+
+```bash
+pnpm --dir frontend install
+```
+
+Run the dashboard:
+
+```bash
+pnpm --dir frontend dev
+```
+
+The Vite dev server proxies `/api` to `http://localhost:8080`, so start the backend first for live data.
+
+Verify frontend changes:
+
+```bash
+pnpm --dir frontend test
+pnpm --dir frontend build
 ```
 
 ## Three-Day Build Plan
