@@ -10,6 +10,7 @@
 target/
 build/
 .gradle/
+.m2/
 *.class
 
 # Node
@@ -30,4 +31,3 @@ coverage/
 docker-data/
 postgres-data/
 redis-data/
-

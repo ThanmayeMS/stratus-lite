@@ -34,6 +34,13 @@ The 3-day target is intentionally focused:
 - Unit and integration tests
 - README screenshots, architecture notes, and demo script
 
+## Current Status
+
+- Backend project scaffolded with Spring Boot.
+- Core fleet, workload, and placement domain model implemented.
+- Placement engine supports `BEST_FIT`, `LEAST_ALLOCATED`, and `BALANCED` strategies.
+- Unit tests cover placement scoring, filtering, and no-capacity failure behavior.
+
 ## Core Domain
 
 Stratus Lite manages a simulated fleet:
@@ -73,6 +80,14 @@ Each placement stores an explanation so the dashboard can show why a cell was ch
 - JUnit 5
 - React Testing Library
 - GitHub Actions
+
+## Local Java Setup
+
+This repo expects Java 21 for backend development.
+
+```bash
+./scripts/use-java-21.sh mvn -Dmaven.repo.local=.m2/repository -f backend/pom.xml test
+```
 
 ## Three-Day Build Plan
 
@@ -117,4 +132,3 @@ Each placement stores an explanation so the dashboard can show why a cell was ch
 - Implemented a capacity-aware `Filter -> Score -> Bind` scheduler with explainable scoring strategies across CPU, memory, storage, and IOPS.
 - Added workload lifecycle orchestration, overload simulation, incident detection, and rebalance recommendations.
 - Wrote automated tests for placement correctness, API behavior, and failure scenarios, with GitHub Actions CI.
-

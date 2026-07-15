@@ -7,14 +7,19 @@ on:
     branches: [main]
 
 jobs:
-  placeholder:
-    name: Repository Initialized
+  backend:
+    name: Backend Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Confirm project structure
-        run: |
-          test -f README.md
-          test -f docs/architecture.md
-          test -f docs/day-plan.md
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Run backend tests
+        run: mvn -Dmaven.repo.local=.m2/repository -f backend/pom.xml test
