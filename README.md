@@ -43,6 +43,7 @@ The 3-day target is intentionally focused:
 - React dashboard shows fleet health, workload creation, placement outcomes, incidents, and rebalance recommendations.
 - JDBC repositories persist fleet, workload, placement, and incident state.
 - Audit events capture workload, placement, simulation, and rebalance actions for a control-plane timeline.
+- Capacity insights compute a live risk score from utilization, incidents, degraded workloads, and recommended moves.
 - Docker Compose runs PostgreSQL, the Spring Boot backend, and the production dashboard together.
 - Frontend and backend test suites run locally and in GitHub Actions.
 - Unit and integration tests cover placement scoring, filtering, API flow, and no-capacity failure behavior.
@@ -143,6 +144,7 @@ Core endpoints:
 - `POST /api/simulations/load-spike` - apply synthetic load to a cell and create an incident if it crosses the overload threshold.
 - `POST /api/simulations/cell-failure` - mark a cell down and degrade assigned workloads.
 - `GET /api/incidents` - list simulated operational incidents.
+- `GET /api/insights/capacity` - summarize fleet health, risk score, utilization pressure, and migration pressure.
 - `GET /api/events?limit=25` - list recent control-plane audit events.
 - `GET /api/rebalance/recommendations` - recommend workload moves away from overloaded or down cells.
 - `POST /api/rebalance/executions` - execute a recommended migration and move capacity between cells.
@@ -223,6 +225,7 @@ pnpm --dir frontend build
 7. Generate a rebalance recommendation.
 8. Execute the migration and show workload/capacity state moving to the target cell.
 9. Show the audit timeline for the full control-plane sequence.
+10. Show the capacity risk score changing as incidents and migrations occur.
 
 ## Resume Bullets
 
@@ -230,4 +233,5 @@ pnpm --dir frontend build
 - Implemented a capacity-aware `Filter -> Score -> Bind` scheduler with explainable scoring strategies across CPU, memory, storage, and IOPS.
 - Added workload lifecycle orchestration, overload simulation, incident detection, and executable rebalance migrations.
 - Persisted an audit timeline for workload, placement, simulation, and migration actions.
+- Built a capacity insight endpoint that scores fleet risk from utilization, incidents, degraded workloads, and migration pressure.
 - Wrote automated tests for placement correctness, API behavior, and failure scenarios, with GitHub Actions CI.

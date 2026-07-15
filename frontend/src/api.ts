@@ -3,6 +3,7 @@ export type CellStatus = "ACTIVE" | "DRAINING" | "DOWN";
 export type WorkloadState = "REQUESTED" | "PLACED" | "RUNNING" | "MIGRATING" | "DEGRADED" | "DECOMMISSIONED";
 export type PlacementStrategy = "BEST_FIT" | "LEAST_ALLOCATED" | "BALANCED";
 export type IncidentSeverity = "INFO" | "WARNING" | "CRITICAL";
+export type CapacityRiskLevel = "LOW" | "ELEVATED" | "HIGH" | "CRITICAL";
 
 export interface ResourceVector {
   cpuCores: number;
@@ -85,6 +86,23 @@ export interface RebalanceExecutionResult {
   message: string;
 }
 
+export interface CapacityInsight {
+  totalCells: number;
+  activeCells: number;
+  drainingCells: number;
+  downCells: number;
+  overloadedCells: number;
+  totalWorkloads: number;
+  degradedWorkloads: number;
+  openIncidents: number;
+  criticalIncidents: number;
+  recommendedMoves: number;
+  maxUtilizationPercent: number;
+  riskScore: number;
+  riskLevel: CapacityRiskLevel;
+  summary: string;
+}
+
 export interface SimulationResult {
   cellId: string;
   cellStatus: CellStatus;
@@ -122,6 +140,7 @@ export const api = {
   workloads: () => request<Workload[]>("/api/workloads"),
   placements: () => request<Placement[]>("/api/placements"),
   incidents: () => request<Incident[]>("/api/incidents"),
+  capacityInsight: () => request<CapacityInsight>("/api/insights/capacity"),
   events: () => request<ControlPlaneEvent[]>("/api/events?limit=20"),
   recommendations: () => request<RebalanceRecommendation[]>("/api/rebalance/recommendations"),
   executeRebalance: (recommendation: RebalanceRecommendation) =>

@@ -78,6 +78,12 @@ class StratusApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].workloadId").value(workloadId));
 
+        mockMvc.perform(get("/api/insights/capacity"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.riskLevel").value("LOW"))
+                .andExpect(jsonPath("$.activeCells").value(3))
+                .andExpect(jsonPath("$.recommendedMoves").value(0));
+
         mockMvc.perform(get("/api/events"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -187,6 +193,13 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$[0].sourceCellId").value("cell-use1-a"))
                 .andExpect(jsonPath("$[0].targetCellId").value("cell-use1-b"))
                 .andExpect(jsonPath("$[0].reason").value("Source cell is DOWN; workload should be restored on a healthy cell"));
+
+        mockMvc.perform(get("/api/insights/capacity"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.riskLevel").value("CRITICAL"))
+                .andExpect(jsonPath("$.downCells").value(1))
+                .andExpect(jsonPath("$.degradedWorkloads").value(1))
+                .andExpect(jsonPath("$.recommendedMoves").value(1));
     }
 
     @Test

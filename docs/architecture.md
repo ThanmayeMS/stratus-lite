@@ -23,6 +23,7 @@ flowchart LR
 - `incidents`: overload/failure simulation and incident records
 - `rebalance`: migration recommendations
 - `audit`: persisted control-plane event timeline
+- `insights`: aggregate fleet risk and capacity posture
 
 The backend keeps domain records separate from persistence details. Services operate on immutable domain objects, while JDBC repositories map those objects to PostgreSQL tables. This keeps the placement logic easy to unit test and keeps database concerns at the module boundary.
 

@@ -2,6 +2,7 @@ import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 
 import {
   Activity,
   AlertTriangle,
+  Gauge,
   CheckCircle2,
   Database,
   Loader2,
@@ -14,6 +15,7 @@ import {
 import {
   api,
   Cell,
+  CapacityInsight,
   ControlPlaneEvent,
   CreateWorkloadPayload,
   Incident,
@@ -41,6 +43,7 @@ export function App() {
   const [workloads, setWorkloads] = useState<Workload[]>([]);
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [capacityInsight, setCapacityInsight] = useState<CapacityInsight | null>(null);
   const [events, setEvents] = useState<ControlPlaneEvent[]>([]);
   const [recommendations, setRecommendations] = useState<RebalanceRecommendation[]>([]);
   const [form, setForm] = useState<CreateWorkloadPayload>(defaultWorkload);
@@ -56,11 +59,20 @@ export function App() {
     setIsLoading(true);
     setError(null);
     try {
-      const [nextCells, nextWorkloads, nextPlacements, nextIncidents, nextEvents, nextRecommendations] = await Promise.all([
+      const [
+        nextCells,
+        nextWorkloads,
+        nextPlacements,
+        nextIncidents,
+        nextCapacityInsight,
+        nextEvents,
+        nextRecommendations
+      ] = await Promise.all([
         api.cells(),
         api.workloads(),
         api.placements(),
         api.incidents(),
+        api.capacityInsight(),
         api.events(),
         api.recommendations()
       ]);
@@ -69,6 +81,7 @@ export function App() {
       setWorkloads(nextWorkloads);
       setPlacements(nextPlacements);
       setIncidents(nextIncidents);
+      setCapacityInsight(nextCapacityInsight);
       setEvents(nextEvents);
       setRecommendations(nextRecommendations);
       if (!selectedCellId && nextCells.length > 0) {
@@ -163,7 +176,7 @@ export function App() {
             <Metric icon={<Server size={20} />} label="Active cells" value={`${activeCells}/${cells.length}`} />
             <Metric icon={<Database size={20} />} label="Active workloads" value={activeWorkloads.toString()} />
             <Metric icon={<AlertTriangle size={20} />} label="Open incidents" value={incidents.length.toString()} />
-            <Metric icon={<Activity size={20} />} label="Audit events" value={events.length.toString()} />
+            <Metric icon={<Gauge size={20} />} label="Risk score" value={capacityInsight?.riskScore.toString() ?? "0"} />
           </section>
 
           <section className="workspace-grid">
@@ -326,6 +339,26 @@ export function App() {
                   </div>
                 ))}
               </div>
+            </DataPanel>
+
+            <DataPanel title="Capacity risk" eyebrow="Insights">
+              {capacityInsight ? (
+                <div className="risk-panel">
+                  <div className={`risk-score ${capacityInsight.riskLevel.toLowerCase()}`}>
+                    <strong>{capacityInsight.riskScore}</strong>
+                    <span>{capacityInsight.riskLevel}</span>
+                  </div>
+                  <p>{capacityInsight.summary}</p>
+                  <div className="risk-facts">
+                    <span>Max util <strong>{capacityInsight.maxUtilizationPercent.toFixed(1)}%</strong></span>
+                    <span>Overloaded <strong>{capacityInsight.overloadedCells}</strong></span>
+                    <span>Down <strong>{capacityInsight.downCells}</strong></span>
+                    <span>Moves <strong>{capacityInsight.recommendedMoves}</strong></span>
+                  </div>
+                </div>
+              ) : (
+                <p className="empty-copy">No capacity insight available.</p>
+              )}
             </DataPanel>
 
             <DataPanel title="Audit events" eyebrow="Timeline">

@@ -56,6 +56,8 @@ describe("App", () => {
     expect(screen.getAllByText("cell-use1-a").length).toBeGreaterThan(0);
     expect(screen.getAllByText("wl-demo").length).toBeGreaterThan(0);
     expect(screen.getByText("CELL_OVERLOADED")).toBeInTheDocument();
+    expect(screen.getByText("Capacity risk")).toBeInTheDocument();
+    expect(screen.getByText("LOW")).toBeInTheDocument();
     expect(screen.getByText("PLACEMENT_CREATED")).toBeInTheDocument();
     expect(screen.getByText("cell-use1-a → cell-use1-b")).toBeInTheDocument();
   });
@@ -140,6 +142,24 @@ function responseFor(url: string) {
         createdAt: "2026-07-15T00:00:00Z"
       }
     ];
+  }
+  if (url === "/api/insights/capacity") {
+    return {
+      totalCells: 2,
+      activeCells: 2,
+      drainingCells: 0,
+      downCells: 0,
+      overloadedCells: 0,
+      totalWorkloads: 1,
+      degradedWorkloads: 0,
+      openIncidents: 1,
+      criticalIncidents: 0,
+      recommendedMoves: 1,
+      maxUtilizationPercent: 55.88,
+      riskScore: 33,
+      riskLevel: "LOW",
+      summary: "Fleet has healthy headroom and no urgent migration pressure"
+    };
   }
   if (url === "/api/events?limit=20") {
     return [

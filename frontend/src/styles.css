@@ -371,10 +371,71 @@ th {
 }
 
 .placement-detail p,
+.risk-panel p,
 .empty-copy {
   margin: 0;
   color: #607086;
   line-height: 1.45;
+}
+
+.risk-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.risk-score {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 72px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #edf7f4;
+  color: #176b5d;
+}
+
+.risk-score strong {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.risk-score span {
+  font-weight: 850;
+}
+
+.risk-score.elevated {
+  background: #fff8e6;
+  color: #8a6100;
+}
+
+.risk-score.high,
+.risk-score.critical {
+  background: #fff1f1;
+  color: #af3029;
+}
+
+.risk-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.risk-facts span {
+  display: grid;
+  gap: 3px;
+  min-height: 46px;
+  padding: 9px;
+  border-radius: 8px;
+  background: #f7f9fc;
+  color: #607086;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.risk-facts strong {
+  color: #172033;
+  font-size: 0.95rem;
 }
 
 .candidate-list,
