@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: stratus-lite-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: postgres
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: STRATUS_CORS_ALLOWED_ORIGIN_PATTERNS
+        value: https://*.vercel.app,http://localhost:*,http://127.0.0.1:*
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75

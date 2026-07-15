@@ -1,5 +1,9 @@
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${PORT:${SERVER_PORT:8081}}
+
+stratus:
+  cors:
+    allowed-origin-patterns: ${STRATUS_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*}
 
 spring:
   application:

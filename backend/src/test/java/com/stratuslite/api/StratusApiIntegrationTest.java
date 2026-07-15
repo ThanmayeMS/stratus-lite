@@ -31,6 +31,15 @@ class StratusApiIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Test
+    void healthEndpointSupportsDeploymentChecks() throws Exception {
+        mockMvc.perform(get("/api/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.service").value("stratus-lite-api"))
+                .andExpect(jsonPath("$.checkedAt", notNullValue()));
+    }
+
+    @Test
     void createsAndPlacesWorkloadThroughHttpApi() throws Exception {
         mockMvc.perform(get("/api/cells"))
                 .andExpect(status().isOk())

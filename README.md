@@ -77,6 +77,7 @@ Project docs:
 
 - [Architecture notes](docs/architecture.md)
 - [Demo script](docs/demo-script.md)
+- [Deployment guide](docs/deployment.md)
 - [Testing guide](docs/testing.md)
 - [Release notes](docs/release-notes.md)
 
@@ -158,6 +159,16 @@ Reset persisted demo data:
 ```bash
 docker compose down -v
 ```
+
+## Public Deployment
+
+The repo includes deployment configuration for a free public demo:
+
+- Backend: Render Docker web service using `render.yaml`
+- Database: Neon PostgreSQL using the backend `postgres` profile
+- Frontend: Vercel static deployment using `vercel.json`
+
+Follow the step-by-step guide in [docs/deployment.md](docs/deployment.md).
 
 ## Backend API
 
