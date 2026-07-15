@@ -1,6 +1,6 @@
 # Demo Script
 
-This is the V1 interview demo path. It shows the project as a local cloud control plane rather than a CRUD app.
+This is the V1 demo path. It shows the project as a local cloud control plane rather than a CRUD app.
 
 ## Setup
 
@@ -31,12 +31,15 @@ docker compose up --build
 4. Open the latest placement panel and explain `Filter -> Score -> Bind`.
 5. Select the placed cell and trigger a cell failure.
 6. Show the incident panel, degraded workload state, and capacity risk panel.
-7. Show the rebalance recommendation from the failed source cell to a healthy target cell.
-8. Execute the migration.
-9. Show the workload moving to `RUNNING`, the source/target cell capacity changes, and recommendations clearing.
-10. Show the migration history entry with `ACTIVE` status.
-11. For a load-spike demo where the source cell remains healthy, roll back the migration and show capacity moving back.
-12. Show the audit timeline proving the end-to-end control-plane sequence.
+7. Show the autonomous loop card reporting `ACTION_REQUIRED`.
+8. Run a reconciler check and explain that it is monitor-only, so it detects work but does not move workloads without approval.
+9. Show the rebalance recommendation from the failed source cell to a healthy target cell.
+10. Execute the migration.
+11. Show the workload moving to `RUNNING`, the source/target cell capacity changes, and recommendations clearing.
+12. Show the migration history entry with `ACTIVE` status.
+13. Show operational metrics for placement decisions, rejected candidates, migrations, incidents, and audit events.
+14. For a load-spike demo where the source cell remains healthy, roll back the migration and show capacity moving back.
+15. Show the audit timeline proving the end-to-end control-plane sequence.
 
 ## Command-Line Smoke Test
 

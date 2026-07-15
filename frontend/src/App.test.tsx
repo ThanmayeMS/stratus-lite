@@ -74,6 +74,10 @@ describe("App", () => {
     expect(screen.getByText(/Rejected by policy/i)).toBeInTheDocument();
     expect(screen.getByText(/Risk score combines/i)).toBeInTheDocument();
     expect(screen.getByText(/Target decision/i)).toBeInTheDocument();
+    expect(screen.getByText("Autonomous loop")).toBeInTheDocument();
+    expect(screen.getByText("Action Required")).toBeInTheDocument();
+    expect(screen.getByText("Operational metrics")).toBeInTheDocument();
+    expect(screen.getByText(/Metrics summarize/i)).toBeInTheDocument();
     expect(screen.getByText("1 rebalance move ready")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /rebalance/i }).length).toBeGreaterThan(1);
     expect(screen.getByRole("button", { name: /migrations/i })).toBeInTheDocument();
@@ -182,6 +186,21 @@ describe("App", () => {
       );
     });
   });
+
+  test("runs the reconciler check on demand", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findByRole("button", { name: /run check/i });
+    await user.click(screen.getByRole("button", { name: /run check/i }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/reconciler/run"),
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+  });
 });
 
 function mockFetch(input: RequestInfo | URL, init?: RequestInit) {
@@ -273,6 +292,37 @@ function responseFor(url: string, method: string) {
       explanation:
         "Risk score combines max utilization 55.88%, 0 overloaded cells, 0 down cells, 0 degraded workloads, 0 critical incidents, and 1 recommended moves.",
       operatorAction: "Review and execute rebalance recommendations before adding more workload."
+    };
+  }
+  if (url === "/api/reconciler/status" || url === "/api/reconciler/run") {
+    return {
+      mode: "MONITOR_ONLY",
+      decision: "ACTION_REQUIRED",
+      pendingRecommendations: 1,
+      activeMigrations: 1,
+      riskLevel: "LOW",
+      lastRunAt: "2026-07-15T00:00:00Z",
+      explanation: "Control loop found 1 rebalance recommendations while fleet risk is LOW.",
+      operatorAction: "Review 1 recommendation and execute the safest migration."
+    };
+  }
+  if (url === "/api/metrics/operations") {
+    return {
+      workloadRequests: 1,
+      activeWorkloads: 0,
+      placementDecisions: 1,
+      rejectedPlacementCandidates: 1,
+      pendingRebalanceRecommendations: 1,
+      totalMigrations: 1,
+      activeMigrations: 1,
+      rolledBackMigrations: 0,
+      openIncidents: 1,
+      recentAuditEvents: 4,
+      maxUtilizationPercent: 55.88,
+      riskScore: 33,
+      riskLevel: "LOW",
+      explanation:
+        "Metrics summarize 1 placement decisions, 1 rejected placement candidates, 1 pending rebalance recommendations, and 1 migration executions."
     };
   }
   if (url === "/api/events?limit=20") {

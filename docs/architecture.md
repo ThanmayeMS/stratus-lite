@@ -12,11 +12,16 @@ flowchart LR
   API --> Incidents["Incident Module"]
   API --> Rebalance["Rebalance Module"]
   API --> Insights["Capacity Insights"]
+  API --> Reconciler["Monitor-Only Reconciler"]
+  API --> Metrics["Operational Metrics"]
   Placement --> DB[("PostgreSQL")]
   Lifecycle --> DB
   Incidents --> DB
   Rebalance --> DB
   Insights --> DB
+  Reconciler --> Rebalance
+  Reconciler --> Insights
+  Metrics --> DB
 ```
 
 ## Backend Modules
@@ -28,8 +33,29 @@ flowchart LR
 - `rebalance`: migration recommendations, execution history, and rollback
 - `audit`: persisted control-plane event timeline
 - `insights`: aggregate fleet risk and capacity posture
+- `reconciler`: monitor-only control loop that detects pending recovery work
+- `observability`: operational metrics for decisions, migrations, incidents, and audit activity
 
 The backend keeps domain records separate from persistence details. Services operate on immutable domain objects, while JDBC repositories map those objects to PostgreSQL tables. This keeps the placement logic easy to unit test and keeps database concerns at the module boundary.
+
+## Control Loop
+
+The reconciler runs in monitor-only mode. It periodically reads capacity risk, pending rebalance recommendations, and active migrations. It does not execute migrations automatically. Instead, it records its latest decision as one of:
+
+- `STEADY`: no pending move and no active migration
+- `ACTION_REQUIRED`: one or more rebalance recommendations need operator approval
+- `MIGRATION_ACTIVE`: migration work is in progress and should be monitored
+
+This keeps the demo close to real control-plane design: automated detection, explicit execution, explainable audit history.
+
+## Observability
+
+The metrics endpoint summarizes the operational surface area:
+
+- workload requests and active workloads
+- placement decisions and rejected placement candidates
+- pending recommendations and migration history
+- incidents, recent audit events, max utilization, and risk score
 
 ## Local-First Design
 

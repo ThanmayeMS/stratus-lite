@@ -5,6 +5,7 @@ export type PlacementStrategy = "BEST_FIT" | "LEAST_ALLOCATED" | "BALANCED";
 export type IncidentSeverity = "INFO" | "WARNING" | "CRITICAL";
 export type CapacityRiskLevel = "LOW" | "ELEVATED" | "HIGH" | "CRITICAL";
 export type RebalanceExecutionStatus = "ACTIVE" | "ROLLED_BACK";
+export type ReconcilerDecision = "STEADY" | "ACTION_REQUIRED" | "MIGRATION_ACTIVE";
 
 export interface ResourceVector {
   cpuCores: number;
@@ -127,6 +128,34 @@ export interface CapacityInsight {
   operatorAction: string;
 }
 
+export interface ReconcilerStatus {
+  mode: string;
+  decision: ReconcilerDecision;
+  pendingRecommendations: number;
+  activeMigrations: number;
+  riskLevel: CapacityRiskLevel;
+  lastRunAt: string | null;
+  explanation: string;
+  operatorAction: string;
+}
+
+export interface OperationalMetrics {
+  workloadRequests: number;
+  activeWorkloads: number;
+  placementDecisions: number;
+  rejectedPlacementCandidates: number;
+  pendingRebalanceRecommendations: number;
+  totalMigrations: number;
+  activeMigrations: number;
+  rolledBackMigrations: number;
+  openIncidents: number;
+  recentAuditEvents: number;
+  maxUtilizationPercent: number;
+  riskScore: number;
+  riskLevel: CapacityRiskLevel;
+  explanation: string;
+}
+
 export interface SimulationResult {
   cellId: string;
   cellStatus: CellStatus;
@@ -186,6 +215,8 @@ export const api = {
   placements: () => request<Placement[]>("/api/placements"),
   incidents: () => request<Incident[]>("/api/incidents"),
   capacityInsight: () => request<CapacityInsight>("/api/insights/capacity"),
+  reconcilerStatus: () => request<ReconcilerStatus>("/api/reconciler/status"),
+  operationalMetrics: () => request<OperationalMetrics>("/api/metrics/operations"),
   events: () => request<ControlPlaneEvent[]>("/api/events?limit=20"),
   recommendations: () => request<RebalanceRecommendation[]>("/api/rebalance/recommendations"),
   executions: () => request<RebalanceExecutionRecord[]>("/api/rebalance/executions"),
@@ -200,6 +231,10 @@ export const api = {
     }),
   rollbackRebalance: (executionId: string) =>
     request<RebalanceExecutionResult>(`/api/rebalance/executions/${executionId}/rollback`, {
+      method: "POST"
+    }),
+  runReconciler: () =>
+    request<ReconcilerStatus>("/api/reconciler/run", {
       method: "POST"
     }),
   resetDemo: () =>

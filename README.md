@@ -1,12 +1,12 @@
 # Stratus Lite
 
-Stratus Lite is a local-first cloud workload placement control plane built as a resume-grade SDE portfolio project.
+Stratus Lite is a local-first cloud workload placement control plane.
 
-It simulates how a cloud platform accepts workload requests, chooses the best cell/node for each workload, reserves capacity, tracks lifecycle state, detects overload, and recommends rebalancing actions.
+It simulates how a cloud platform accepts workload requests, chooses the best cell for each workload, reserves capacity, tracks lifecycle state, detects overload, recommends rebalancing actions, and explains each operational decision.
 
-## Why This Project
+The project runs entirely on a laptop with free local tooling. No external cloud account or paid API is required.
 
-This project is designed to demonstrate practical SDE skills without requiring paid cloud infrastructure:
+## Technical Highlights
 
 - Backend system design with Java and Spring Boot
 - React + TypeScript dashboard development
@@ -14,6 +14,8 @@ This project is designed to demonstrate practical SDE skills without requiring p
 - Capacity-aware scheduling algorithms
 - Workload lifecycle orchestration
 - Incident simulation and rebalancing
+- Monitor-only autonomous reconciler
+- Operational metrics endpoint
 - Auditability and operational risk insights
 - Test automation and CI
 - Docker Compose based local development
@@ -30,6 +32,8 @@ The first version is intentionally focused:
 - Workload lifecycle: `REQUESTED -> RUNNING -> DEGRADED -> MIGRATING -> RUNNING`
 - Incident simulation for overloaded or failed cells
 - Rebalance recommendations and executable migrations
+- Monitor-only reconciler that continuously checks for pending recovery actions
+- Operational metrics for placement, rejection, migration, incident, and audit activity
 - Capacity risk insight and control-plane audit timeline
 - Unit and integration tests
 - Architecture notes, testing guide, release notes, demo script, and smoke test
@@ -45,6 +49,8 @@ The first version is intentionally focused:
 - Audit events capture workload, placement, simulation, and rebalance actions for a control-plane timeline.
 - Rebalance execution history records migration status and supports capacity-safe rollback.
 - Capacity insights compute a live risk score from utilization, incidents, degraded workloads, and recommended moves.
+- The reconciler exposes current control-loop status and can be run on demand from the dashboard.
+- Operational metrics expose placement decisions, rejected candidates, migrations, incidents, and recent audit events.
 - Docker Compose runs PostgreSQL, the Spring Boot backend, and the production dashboard together.
 - Frontend and backend test suites run locally and in GitHub Actions.
 - Unit and integration tests cover placement scoring, filtering, API flow, and no-capacity failure behavior.
@@ -179,6 +185,9 @@ Core endpoints:
 - `POST /api/rebalance/executions` - execute a recommended migration and move capacity between cells.
 - `GET /api/rebalance/executions` - list migration execution history and rollback status.
 - `POST /api/rebalance/executions/{executionId}/rollback` - roll back an active migration if the source cell is healthy and has capacity.
+- `GET /api/reconciler/status` - show the latest monitor-only control-loop decision.
+- `POST /api/reconciler/run` - run one reconciler sweep and record the decision in the audit timeline.
+- `GET /api/metrics/operations` - expose operational metrics for placements, rejected candidates, migrations, incidents, and audit events.
 
 Example workload request:
 
@@ -213,6 +222,13 @@ pnpm --dir frontend dev
 In dev mode the dashboard calls `http://localhost:8081/api` directly, so start the backend first for live data.
 If you intentionally run the backend on a different port, start Vite with `VITE_STRATUS_API_BASE_URL=http://localhost:<port>/api`.
 
+The dashboard includes:
+
+- A beginner-friendly quick start and guided failure drill.
+- Fleet, workload, placement, incident, rebalance, migration, and risk panels.
+- A monitor-only reconciler card that explains the current control-loop decision.
+- Operational metrics cards for placement, rejection, migration, and audit activity.
+
 Verify frontend changes:
 
 ```bash
@@ -220,43 +236,22 @@ pnpm --dir frontend test
 pnpm --dir frontend build
 ```
 
-## Three-Day Build Plan
+## Demo Flow
 
-### Day 1: Backend Foundation
-
-- Create Spring Boot project structure.
-- Model tenants, workloads, cells, placement decisions, and incidents.
-- Add PostgreSQL schema and seed data.
-- Implement placement engine with unit tests.
-- Add REST APIs for creating workloads, placing workloads, listing fleet state, and simulating load.
-
-### Day 2: Dashboard And Reliability
-
-- Create React dashboard.
-- Build fleet capacity view, workload table, placement explanation panel, and incident timeline.
-- Add lifecycle state transitions.
-- Add overload/failure simulation.
-- Add rebalance recommendation logic.
-- Add migration history and rollback for executed recommendations.
-
-### Day 3: Polish And Proof
-
-- Add integration tests.
-- Add Docker Compose.
-- Add GitHub Actions CI.
-- Add demo script and smoke test.
-- Write final resume bullets and architecture notes.
+1. Reset the demo state.
+2. Create and place a workload.
+3. Simulate a cell failure or load spike.
+4. Watch the reconciler report `ACTION_REQUIRED`.
+5. Review the rebalance recommendation and explanation.
+6. Execute the migration.
+7. Verify migration history, metrics, audit events, and capacity risk.
 
 ## Demo Script
 
 Use the dedicated V1 walkthrough in [docs/demo-script.md](docs/demo-script.md).
 
-## Resume Bullets
+## Design Notes
 
-- Built a local cloud workload placement control plane using Java, Spring Boot, React, PostgreSQL, and Docker Compose.
-- Implemented a capacity-aware `Filter -> Score -> Bind` scheduler with explainable scoring strategies across CPU, memory, storage, and IOPS.
-- Added workload lifecycle orchestration, overload simulation, incident detection, and executable rebalance migrations.
-- Added persisted migration history and rollback controls for rebalance executions.
-- Persisted an audit timeline for workload, placement, simulation, and migration actions.
-- Built a capacity insight endpoint that scores fleet risk from utilization, incidents, degraded workloads, and migration pressure.
-- Wrote automated tests for placement correctness, API behavior, and failure scenarios, with GitHub Actions CI.
+- The reconciler is monitor-only by design. It detects drift and recommends action, while migration execution remains explicit and auditable.
+- Placement decisions are explainable. The API returns accepted and rejected candidate cells with policy summaries.
+- The app favors local repeatability over external integrations, which keeps the demo free and easy to run.

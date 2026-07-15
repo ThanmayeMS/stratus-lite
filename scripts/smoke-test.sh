@@ -114,6 +114,17 @@ PY
 target_cell_id="$(json_get "$tmp_dir/recommendation.json" "targetCellId")"
 echo "Recommended target: $target_cell_id"
 
+request GET "/api/reconciler/status" "" "$tmp_dir/reconciler-status.json"
+reconciler_decision="$(json_get "$tmp_dir/reconciler-status.json" "decision")"
+if [[ "$reconciler_decision" != "ACTION_REQUIRED" ]]; then
+  echo "Expected reconciler decision ACTION_REQUIRED, got $reconciler_decision" >&2
+  exit 1
+fi
+echo "Reconciler decision: $reconciler_decision"
+
+request POST "/api/reconciler/run" "" "$tmp_dir/reconciler-run.json"
+echo "Reconciler sweep recorded"
+
 request POST "/api/rebalance/executions" "$(cat "$tmp_dir/recommendation.json")" "$tmp_dir/execution.json"
 execution_id="$(json_get "$tmp_dir/execution.json" "executionId")"
 execution_state="$(json_get "$tmp_dir/execution.json" "state")"
@@ -149,6 +160,14 @@ request GET "/api/insights/capacity" "" "$tmp_dir/insight.json"
 risk_level="$(json_get "$tmp_dir/insight.json" "riskLevel")"
 risk_score="$(json_get "$tmp_dir/insight.json" "riskScore")"
 echo "Capacity risk: $risk_level ($risk_score)"
+
+request GET "/api/metrics/operations" "" "$tmp_dir/metrics.json"
+total_migrations="$(json_get "$tmp_dir/metrics.json" "totalMigrations")"
+if [[ "$total_migrations" != "1" ]]; then
+  echo "Expected one recorded migration, got $total_migrations" >&2
+  exit 1
+fi
+echo "Operational metrics recorded migrations: $total_migrations"
 
 request GET "/api/events?limit=10" "" "$tmp_dir/events.json"
 event_count="$(python3 - "$tmp_dir/events.json" <<'PY'

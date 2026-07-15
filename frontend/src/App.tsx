@@ -21,10 +21,12 @@ import {
   ControlPlaneEvent,
   CreateWorkloadPayload,
   Incident,
+  OperationalMetrics,
   Placement,
   PlacementStrategy,
   RebalanceExecutionRecord,
   RebalanceRecommendation,
+  ReconcilerStatus,
   ServiceTier,
   STRATUS_API_BASE_URL,
   Workload
@@ -73,6 +75,14 @@ const storySections = [
   { id: "observe-section", step: "05", label: "Observe" }
 ];
 
+async function optionalSnapshot<T>(request: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await request;
+  } catch {
+    return fallback;
+  }
+}
+
 export function App() {
   const [cells, setCells] = useState<Cell[]>([]);
   const [workloads, setWorkloads] = useState<Workload[]>([]);
@@ -82,6 +92,8 @@ export function App() {
   const [events, setEvents] = useState<ControlPlaneEvent[]>([]);
   const [recommendations, setRecommendations] = useState<RebalanceRecommendation[]>([]);
   const [executions, setExecutions] = useState<RebalanceExecutionRecord[]>([]);
+  const [reconcilerStatus, setReconcilerStatus] = useState<ReconcilerStatus | null>(null);
+  const [operationalMetrics, setOperationalMetrics] = useState<OperationalMetrics | null>(null);
   const [form, setForm] = useState<CreateWorkloadPayload>(defaultWorkload);
   const [strategy, setStrategy] = useState<PlacementStrategy>("LEAST_ALLOCATED");
   const [selectedWorkloadId, setSelectedWorkloadId] = useState("");
@@ -108,7 +120,9 @@ export function App() {
         nextCapacityInsight,
         nextEvents,
         nextRecommendations,
-        nextExecutions
+        nextExecutions,
+        nextReconcilerStatus,
+        nextOperationalMetrics
       ] = await Promise.all([
         api.cells(),
         api.workloads(),
@@ -117,7 +131,9 @@ export function App() {
         api.capacityInsight(),
         api.events(),
         api.recommendations(),
-        api.executions()
+        api.executions(),
+        optionalSnapshot<ReconcilerStatus | null>(api.reconcilerStatus(), null),
+        optionalSnapshot<OperationalMetrics | null>(api.operationalMetrics(), null)
       ]);
 
       setCells(nextCells);
@@ -128,6 +144,8 @@ export function App() {
       setEvents(nextEvents);
       setRecommendations(nextRecommendations);
       setExecutions(nextExecutions);
+      setReconcilerStatus(nextReconcilerStatus);
+      setOperationalMetrics(nextOperationalMetrics);
       if (!selectedCellId && nextCells.length > 0) {
         setSelectedCellId(nextCells[0].id);
       }
@@ -458,6 +476,56 @@ export function App() {
                   Migrations
                 </button>
               </div>
+            </section>
+
+            <section className="control-plane-grid" aria-label="Control loop and metrics">
+              <article className={`control-card ${reconcilerStatus?.decision === "ACTION_REQUIRED" ? "needs-action" : ""}`}>
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">Autonomous loop</p>
+                    <h2>{reconcilerStatus ? humanDecision(reconcilerStatus.decision) : "Waiting for reconciler"}</h2>
+                    <p className="panel-help">
+                      {reconcilerStatus?.explanation ?? "Run the latest backend to see reconciler status."}
+                    </p>
+                    <p className="panel-help">
+                      <strong>Next:</strong> {reconcilerStatus?.operatorAction ?? "Start backend APIs, then refresh the dashboard."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="mini-button"
+                    onClick={() => void mutate(() => api.runReconciler(), "Reconciler sweep completed")}
+                    disabled={isMutating}
+                  >
+                    <RefreshCw size={15} />
+                    Run check
+                  </button>
+                </div>
+                <div className="control-facts">
+                  <span>Mode <strong>{reconcilerStatus?.mode ?? "unknown"}</strong></span>
+                  <span>Pending moves <strong>{reconcilerStatus?.pendingRecommendations ?? recommendations.length}</strong></span>
+                  <span>Active migrations <strong>{reconcilerStatus?.activeMigrations ?? activeExecutions.length}</strong></span>
+                  <span>Last run <strong>{formatTimestamp(reconcilerStatus?.lastRunAt)}</strong></span>
+                </div>
+              </article>
+
+              <article className="control-card">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">Observability</p>
+                    <h2>Operational metrics</h2>
+                    <p className="panel-help">
+                      {operationalMetrics?.explanation ?? "Metrics appear when the latest backend is running."}
+                    </p>
+                  </div>
+                </div>
+                <div className="control-facts">
+                  <span>Placements <strong>{operationalMetrics?.placementDecisions ?? placements.length}</strong></span>
+                  <span>Rejected candidates <strong>{operationalMetrics?.rejectedPlacementCandidates ?? 0}</strong></span>
+                  <span>Migrations <strong>{operationalMetrics?.totalMigrations ?? executions.length}</strong></span>
+                  <span>Audit events <strong>{operationalMetrics?.recentAuditEvents ?? events.length}</strong></span>
+                </div>
+              </article>
             </section>
           </section>
 
@@ -912,6 +980,18 @@ function formatCandidateScore(score: number, isEligible: boolean) {
 
 function formatPercent(value: number) {
   return Number.isFinite(value) ? `${value.toFixed(1)}%` : "not recorded";
+}
+
+function humanDecision(decision: ReconcilerStatus["decision"]) {
+  return decision
+    .toLowerCase()
+    .split("_")
+    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}
+
+function formatTimestamp(value?: string | null) {
+  return value ? new Date(value).toLocaleTimeString() : "not run yet";
 }
 
 function shortId(id: string) {

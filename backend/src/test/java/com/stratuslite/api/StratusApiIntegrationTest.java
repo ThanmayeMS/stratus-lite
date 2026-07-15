@@ -19,7 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
+@SpringBootTest(properties = "stratus.reconciler.initial-delay-ms=3600000")
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class StratusApiIntegrationTest {
@@ -360,6 +360,58 @@ class StratusApiIntegrationTest {
                 .andExpect(jsonPath("$.recommendedMoves").value(1))
                 .andExpect(jsonPath("$.explanation").value(notNullValue()))
                 .andExpect(jsonPath("$.operatorAction").value(notNullValue()));
+    }
+
+    @Test
+    void reconcilerAndMetricsExposeProductionControlLoopState() throws Exception {
+        createAndPlaceStandardWorkloadOnCellUse1A();
+
+        mockMvc.perform(post("/api/simulations/cell-failure")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "cellId": "cell-use1-a"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/reconciler/status"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mode").value("MONITOR_ONLY"))
+                .andExpect(jsonPath("$.decision").value("ACTION_REQUIRED"))
+                .andExpect(jsonPath("$.pendingRecommendations").value(1))
+                .andExpect(jsonPath("$.activeMigrations").value(0))
+                .andExpect(jsonPath("$.riskLevel").value("CRITICAL"))
+                .andExpect(jsonPath("$.explanation").value(notNullValue()))
+                .andExpect(jsonPath("$.operatorAction").value(notNullValue()));
+
+        mockMvc.perform(post("/api/reconciler/run"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.decision").value("ACTION_REQUIRED"))
+                .andExpect(jsonPath("$.lastRunAt").value(notNullValue()));
+
+        mockMvc.perform(get("/api/metrics/operations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workloadRequests").value(1))
+                .andExpect(jsonPath("$.activeWorkloads").value(0))
+                .andExpect(jsonPath("$.placementDecisions").value(1))
+                .andExpect(jsonPath("$.rejectedPlacementCandidates").value(2))
+                .andExpect(jsonPath("$.pendingRebalanceRecommendations").value(1))
+                .andExpect(jsonPath("$.totalMigrations").value(0))
+                .andExpect(jsonPath("$.activeMigrations").value(0))
+                .andExpect(jsonPath("$.openIncidents").value(1))
+                .andExpect(jsonPath("$.riskLevel").value("CRITICAL"))
+                .andExpect(jsonPath("$.explanation").value(notNullValue()));
+
+        mockMvc.perform(get("/api/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(4)))
+                .andExpect(jsonPath("$[*].type", containsInAnyOrder(
+                        "WORKLOAD_CREATED",
+                        "PLACEMENT_CREATED",
+                        "CELL_FAILURE_SIMULATED",
+                        "RECONCILER_SWEEP"
+                )));
     }
 
     @Test
